@@ -1,0 +1,137 @@
+{
+	"connections": [
+		{
+			"from": "bricks",
+			"from_port": 0,
+			"to": "Material",
+			"to_port": 0
+		}
+	],
+	"label": "Graph",
+	"longdesc": "",
+	"name": "292",
+	"node_position": {
+		"x": 0,
+		"y": 0
+	},
+	"nodes": [
+		{
+			"export_paths": {
+
+			},
+			"name": "Material",
+			"node_position": {
+				"x": 218,
+				"y": -99
+			},
+			"parameters": {
+				"albedo_color": {
+					"a": 1,
+					"b": 1,
+					"g": 1,
+					"r": 1,
+					"type": "Color"
+				},
+				"ao": 1,
+				"depth_scale": 0.5,
+				"emission_energy": 1,
+				"flags_transparent": true,
+				"metallic": 0,
+				"normal": 1,
+				"roughness": 1,
+				"size": 11,
+				"sss": 1
+			},
+			"seed": 0,
+			"seed_locked": false,
+			"type": "material"
+		},
+		{
+			"name": "bricks",
+			"node_position": {
+				"x": -164,
+				"y": -107
+			},
+			"parameters": {
+				"bevel": 0.1,
+				"columns": 3,
+				"corner": 0.3,
+				"mortar": 0.01,
+				"pattern": 3,
+				"repeat": 1,
+				"round": 0,
+				"row_offset": 0.5,
+				"rows": 3
+			},
+			"seed": 0,
+			"seed_locked": false,
+			"type": "bricks3"
+		},
+		{
+			"name": "remote_1",
+			"node_position": {
+				"x": 72.733307,
+				"y": -213.5
+			},
+			"parameters": {
+				"param0": 1,
+				"param1": 0,
+				"param2": 0.01
+			},
+			"seed": 0,
+			"seed_locked": false,
+			"type": "remote",
+			"widgets": [
+				{
+					"label": "Repeat",
+					"linked_widgets": [
+						{
+							"node": "bricks",
+							"widget": "repeat"
+						}
+					],
+					"name": "param0",
+					"type": "linked_control"
+				},
+				{
+					"configurations": {
+						"TestConfig": [
+							{
+								"node": "bricks",
+								"value": 3,
+								"widget": "columns"
+							}
+						]
+					},
+					"label": "Column",
+					"linked_widgets": [
+						{
+							"node": "bricks",
+							"widget": "columns"
+						}
+					],
+					"name": "param1",
+					"type": "config_control"
+				},
+				{
+					"label": "Unnamed",
+					"linked_widgets": [
+						{
+							"node": "bricks",
+							"widget": "mortar"
+						}
+					],
+					"name": "param2",
+					"type": "linked_control"
+				}
+			]
+		}
+	],
+	"parameters": {
+
+	},
+	"seed": 0,
+	"seed_locked": false,
+	"shortdesc": "",
+	"type": "graph"
+}

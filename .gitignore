@@ -1,0 +1,5 @@
+__pycache__/
+websockets/
+websockets-10.3.dist-info/
+*.mmcr
+*.blend1
