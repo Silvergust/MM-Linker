@@ -90,6 +90,8 @@ class MML():
         t0 = time.time()
         img.pixels.foreach_set([byte / 255.0 for byte in data])
         img.pack()
+        img.update()
+        bpy.context.view_layer.update()
         print("Image replaced in time: ", time.time() - t0)
 
 
