@@ -40,6 +40,7 @@ class MMLClient:
         
     async def connect(self, data):
         print("Connect()")
+        previous_time = time.time()
         async with websockets.connect("ws://localhost:6000", max_size=1000000000) as websocket:
             self.status = Status.connected
             print("Connected")
@@ -50,6 +51,10 @@ class MMLClient:
                     mml.MML.interpret(self.image, message)
                 if len(self.data_to_send) > 0:
                     await websocket.send(self.data_to_send.pop())
+                if time.time() > previous_time + 5.0:
+                    previous_time = time.time()
+                    self.send(mml.MML.commands_dict["ping"] + "||")
+
                 await asyncio.sleep(0.01)
                 
             print("End")
@@ -62,8 +67,7 @@ class MMLClient:
     def send_command(self, command, image_name, data):
         print("send_command_data")
         self.data_to_send.append("{}|{}|{}".format(command, image_name, data))
-        
-        
+         
     def get_status_string(self):
         return MMLClient.status_strings[self.status]
         

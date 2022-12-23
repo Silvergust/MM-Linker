@@ -44,13 +44,14 @@ class MMLPanel(bpy.types.Panel):
         row = layout.row()
         layout.prop(img.mml_properties, 'use_remote_parameters')
         
-        connect_button = layout.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Connect to MM")
+        connect_button = layout.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Submit PTex to MM")
         connect_button.data_to_send = bpy.path.abspath(img.mml_properties.ptex_filepath)
         connect_button.expected_packets = 2
         connect_button.image_name = img.name
-        send_ptex_button = layout.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Send PTex")
-        send_ptex_button.image_name = img.name
-        
+        #send_ptex_button = layout.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Send PTex")
+        #send_ptex_button.image_name = img.name
+        #connect_button = layout.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Set resolution")
+        #connect_button.data_to_send = img.size
         
         row = layout.row()
         if (img.mml_properties.use_remote_parameters):
@@ -61,11 +62,11 @@ class MMLPanel(bpy.types.Panel):
                           "mml_local_parameters", img, "params_list_index")
                           
             
-    def get_status_text(self):
-        if self.connection_status == ConnectionStatus.Disconnected:
-            return "Disconnected."
-        if self.connection_status == ConnectionStatus.Connected:
-            return "Connected."
+#    def get_status_text(self):
+#        if self.connection_status == ConnectionStatus.Disconnected:
+#            return "Disconnected."
+#        if self.connection_status == ConnectionStatus.Connected:
+#            return "Connected."
             
             
 #class OBJECT_OT_create_ptex_props(bpy.types.Operator):
@@ -115,7 +116,6 @@ class MMLPanel(bpy.types.Panel):
 def update_test(self, context):
     print("Update_test: ", self)
     
-
 
 class UI_UL_ParamsList(bpy.types.UIList):
     """Demo UIList."""

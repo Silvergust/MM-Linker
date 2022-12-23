@@ -4,6 +4,7 @@ import mml_sender
 import mml_client
 import asyncio
 import time
+import math
 
 
 class MMLProperties(bpy.types.PropertyGroup):
@@ -60,7 +61,8 @@ class MML():
         "initialize_parameters" : "0002",
         "set_parameter_value" : "0003",
         "initialize_remote_parameters" : "0004",
-        "set_remote_parameter_value" : "0005"
+        "set_remote_parameter_value" : "0005",
+        "ping" : "0006"
     }
     received_messages = []
 
@@ -70,6 +72,7 @@ class MML():
         prefix = data[:MML.command_size]
         dummy, image_name, arguments = str(data).split("|")[:3] # WHen the image data is turned to a string, it may end up having another divider
         pad = 2 + 2 + len(image_name)
+        print(prefix.hex())
         if prefix.hex() == MML.commands_dict["connect"]: #"0001":
             print("pad: ", pad)
             MML.replace_image(image_name, data[pad:])
@@ -79,6 +82,8 @@ class MML():
             MML.set_parameter_values(image_name, data[pad:])
         elif prefix.hex() == MML.commands_dict["initialize_remote_parameters"]:
             MML.initialize_parameters(image_name, data[pad:], True)
+        elif prefix.hex() == MML.commands_dict["ping"]:
+            print("Pong")
         else:
             print("ERROR: first two bytes do not correspond to a valid prefix.")
 
@@ -88,7 +93,11 @@ class MML():
         img = bpy.data.images[image_name]
         print("replace_image, image: ", image_name)
         t0 = time.time()
-        img.pixels.foreach_set([byte / 255.0 for byte in data])
+        print("Len(data): ", len(data))
+        size = int(math.sqrt(len(data)))
+        img.scale(size, size)
+        
+        img.pixels.foreach_set(img.channels*[byte / 255.0 for byte in data])
         img.pack()
         img.update()
         bpy.context.view_layer.update()
