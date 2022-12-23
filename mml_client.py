@@ -5,7 +5,6 @@ import websockets
 import threading
 import mml_main as mml
 
-
 class Status:
     disconnected = 0
     connected = 1
@@ -27,6 +26,11 @@ class MMLClient:
         self.image = image
         self.status = Status.disconnected
         self.data_to_send = []
+        self.begin_connect_thread()
+        
+    def begin_connect_thread(self):
+        if self.status == Status.connected:
+            return
         connection = threading.Thread(target = self.start_connection)
         connection.daemon = True
         connection.start()
@@ -40,11 +44,15 @@ class MMLClient:
         
     async def connect(self, data):
         print("Connect()")
-        previous_time = time.time()
+        
         async with websockets.connect("ws://localhost:6000", max_size=1000000000) as websocket:
             self.status = Status.connected
             print("Connected")
+            previous_time = time.time()
             while True:
+                if not websocket.open:
+                    self.status = Status.disconnected
+                    break
                 while len(websocket.messages) > 0:
                     message = websocket.messages.popleft()
                     print("Handling message ", message[:140])
@@ -54,9 +62,7 @@ class MMLClient:
                 if time.time() > previous_time + 5.0:
                     previous_time = time.time()
                     self.send(mml.MML.commands_dict["ping"] + "||")
-
                 await asyncio.sleep(0.01)
-                
             print("End")
         
             
@@ -71,3 +77,23 @@ class MMLClient:
     def get_status_string(self):
         return MMLClient.status_strings[self.status]
         
+class OBJECT_OT_connect(bpy.types.Operator):
+    """Attempt to connect MML client to server."""
+    bl_idname = "image.mml_connect"
+    bl_label = "MML Connect"
+    #data_to_send: bpy.props.StringProperty(name="data")
+    #image_name: bpy.props.StringProperty(name='image_name')
+    #expected_packets: bpy.props.IntProperty(name='expected_packets')
+    
+    @classmethod
+    def poll(cls, context):
+        return context.active_object is not None
+
+    def execute(self, context):
+        MMLClient.instance.begin_connect_thread()
+#        print("Sending data: ")
+#        #MMLClient.instance.send_command(mml.MML.commands_dict['connect'], self.image_name, self.data_to_send)
+#        connection = threading.Thread(target = MMLClient.instance.start_connection)
+#        connection.daemon = True
+#        connection.start()
+        return {'FINISHED'}

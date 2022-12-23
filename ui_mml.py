@@ -44,10 +44,13 @@ class MMLPanel(bpy.types.Panel):
         row = layout.row()
         layout.prop(img.mml_properties, 'use_remote_parameters')
         
-        connect_button = layout.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Submit PTex to MM")
-        connect_button.data_to_send = bpy.path.abspath(img.mml_properties.ptex_filepath)
-        connect_button.expected_packets = 2
-        connect_button.image_name = img.name
+        row = layout.row()
+        connect_button = layout.operator(mml_client.OBJECT_OT_connect.bl_idname, text="Connect to MM")
+        row = layout.row()
+        ptex_button = layout.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Submit PTex to MM")
+        ptex_button.data_to_send = bpy.path.abspath(img.mml_properties.ptex_filepath)
+        ptex_button.expected_packets = 2
+        ptex_button.image_name = img.name
         #send_ptex_button = layout.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Send PTex")
         #send_ptex_button.image_name = img.name
         #connect_button = layout.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Set resolution")
@@ -143,6 +146,7 @@ def register():
     mml_sender.OBJECT_OT_send.mml_properties = bpy.props.PointerProperty(type=mml.MMLProperties, name="MML Properties", description="MML properties")
     #bpy.utils.register_class(OBJECT_OT_create_ptex_props)
     bpy.utils.register_class(mml_sender.OBJECT_OT_send)
+    bpy.utils.register_class(mml_client.OBJECT_OT_connect)
     bpy.utils.register_class(UI_UL_ParamsList)
     bpy.types.Image.params_list_index = bpy.props.IntProperty(name = "Index for ParamList",
                                              default = 0)
@@ -158,6 +162,7 @@ def unregister():
     del mml_sender.OJBECT_OT_send.mml_properties
     #bpy.utils.unregister_class(OBJECT_OT_create_ptex_props)
     bpy.utils.unregister_class(mml_sender.OBJECT_OT_send)
+    bpy.utils.unregister_class(mml_client.OBJECT_OT_connect)
     bpy.utils.unregister_class(UI_UL_ParamsList)
 
 if __name__ == "__main__":
