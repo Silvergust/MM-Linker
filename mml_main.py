@@ -66,7 +66,7 @@ class MML():
     }
     command_key_requirements = {
         "pong" : [],
-        "replace_image" : ["image_name", "image_data"]
+        "replace_image" : ["image_data"] # TODO: Make use of image names for proper identification
     }
     received_messages = []
 
@@ -84,18 +84,19 @@ class MML():
     @classmethod
     def interpret(self, img, data):
         print("data: ", data)
-        data = json.loads(data)
-        print("json_data: ", data)
-        if not self.key_check(data):
-            print("Key check fail")
-            return
-        command = data["command"]
-        if command == "pong":
-            print("Pong")
-        elif command == "replace_image":
-            print("Replacing image")
-            replace_image(img.name, data["image_data"])
+        #prefix = data[8:]
+        print("prefix: ", data[5:])
+        print("prefix.hex(): ", data[5:].hex())
+        if data[:5] == b"json|":
+            self.interpret_json(data[5:]) 
+        elif data[:6] == b"image|":
+            self.replace_image(img.name, data[6:]) # TODO: Do away with the unnecessary copying
+            print("Failed to interpret message")
         return
+        #elif command == "replace_image":
+        #    print("Replacing image")
+        #    self.replace_image(img.name, data["image_data"])
+        #return
         
         
         prefix = data[:MML.command_size]
@@ -116,6 +117,16 @@ class MML():
         else:
             print("ERROR: first two bytes do not correspond to a valid prefix.")
 
+    @classmethod
+    def interpret_json(self, data):
+        data = json.loads(data)
+        print("json_data: ", data)
+        if not self.key_check(data):
+            print("Key check fail")
+            return
+        command = data["command"]
+        if command == "pong":
+            print("Pong")
 
     @classmethod
     def replace_image(self, image_name, data):
