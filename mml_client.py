@@ -4,6 +4,7 @@ import asyncio
 import websockets
 import threading
 import mml_main as mml
+import json
 
 class Status:
     disconnected = 0
@@ -45,7 +46,7 @@ class MMLClient:
     async def connect(self, data):
         print("Connect()")
         
-        async with websockets.connect("ws://localhost:6000", max_size=1000000000) as websocket:
+        async with websockets.connect("ws://localhost:6001", max_size=1000000000) as websocket:
             self.status = Status.connected
             print("Connected")
             previous_time = time.time()
@@ -61,7 +62,9 @@ class MMLClient:
                     await websocket.send(self.data_to_send.pop())
                 if time.time() > previous_time + 5.0:
                     previous_time = time.time()
-                    self.send(mml.MML.commands_dict["ping"] + "||")
+                    #data = json.dumps('{"command":"ping"}')
+                    data = json.dumps({"command":"ping"})
+                    self.send_json(data)
                 await asyncio.sleep(0.01)
             print("End")
         
@@ -69,6 +72,12 @@ class MMLClient:
     def send(self, data):
         print("Send()")
         self.data_to_send.append(data)
+        
+    def send_json(self, data):
+        print("Sending ", data)
+        #self.data_to_send.append(str(data))
+        self.data_to_send.append(data)
+        
         
     def send_command(self, command, image_name, data):
         print("send_command_data")

@@ -5,6 +5,7 @@ import os
 import mml_main as mml
 import time
 import mml_client
+import json
 
 class OBJECT_OT_send(bpy.types.Operator):
     """Send shader data to the MML program."""
@@ -20,7 +21,10 @@ class OBJECT_OT_send(bpy.types.Operator):
 
     def execute(self, context):
         print("Sending data: ")
-        mml_client.MMLClient.instance.send_command(mml.MML.commands_dict['connect'], self.image_name, self.data_to_send)
+        #mml_client.MMLClient.instance.send_command(mml.MML.commands_dict['connect'], self.image_name, self.data_to_send)
+        data_dict = { "command" : "load_ptex", "image_name":self.image_name, "filepath" : self.data_to_send }
+        data = json.dumps(data_dict)
+        mml_client.MMLClient.instance.send_json(data)
         return {'FINISHED'}
 
 #def manage_loop_and_connect(image_name, data_to_send, expected_packets):

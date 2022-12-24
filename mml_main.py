@@ -64,11 +64,40 @@ class MML():
         "set_remote_parameter_value" : "0005",
         "ping" : "0006"
     }
+    command_key_requirements = {
+        "pong" : [],
+        "replace_image" : ["image_name", "image_data"]
+    }
     received_messages = []
 
-
+    @classmethod
+    def key_check(self, data):
+        if "command" not in data:
+            print("ERROR: \"command\" key not found in data")
+            return False
+        for key in self.command_key_requirements[data["command"]]:
+            if key not in data:
+                print("ERROR: key \"{}\" not found in data".format(key))
+                return False
+        return True
+        
     @classmethod
     def interpret(self, img, data):
+        print("data: ", data)
+        data = json.loads(data)
+        print("json_data: ", data)
+        if not self.key_check(data):
+            print("Key check fail")
+            return
+        command = data["command"]
+        if command == "pong":
+            print("Pong")
+        elif command == "replace_image":
+            print("Replacing image")
+            replace_image(img.name, data["image_data"])
+        return
+        
+        
         prefix = data[:MML.command_size]
         dummy, image_name, arguments = str(data).split("|")[:3] # WHen the image data is turned to a string, it may end up having another divider
         pad = 2 + 2 + len(image_name)
