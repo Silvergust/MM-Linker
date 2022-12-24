@@ -17,11 +17,13 @@ def update_test(self, context):
         print("Value changed")
         if self.should_update:
             print("Updating.")
-            data_to_send = str(self.name) + ":" + str(self.value)
+            #data_to_send = str(self.name) + ":" + str(self.value)
             command_prefix = MML.commands_dict['set_remote_parameter_value'] if self.is_remote else MML.commands_dict['set_parameter_value']
             print("command_prefix: ", command_prefix)
             #mml_client.MMLClient.instance.send_command(MML.commands_dict['set_parameter_value'], self.owner_image.name, data_to_send)
-            mml_client.MMLClient.instance.send_command(command_prefix, self.owner_image.name, data_to_send)
+            #mml_client.MMLClient.instance.send_command(command_prefix, self.owner_image.name, data_to_send)
+            data_to_send = json.dumps({ "command":"parameter_change", "parameter_name":self.name, "parameter_value":self.value })
+            mml_client.MMLClient.instance.send_json(data_to_send)
 
 #types_enum =  [ ("INT", "Int") ]
 
@@ -66,7 +68,8 @@ class MML():
     }
     command_key_requirements = {
         "pong" : [],
-        "replace_image" : ["image_data"] # TODO: Make use of image names for proper identification
+        "replace_image" : ["image_data"], # TODO: Make use of image names for proper identification
+        "init_parameters" : ["parameters_type", "parameters"]
     }
     received_messages = []
 
@@ -83,14 +86,15 @@ class MML():
         
     @classmethod
     def interpret(self, img, data):
-        print("data: ", data)
+        #print("data: ", data)
         #prefix = data[8:]
-        print("prefix: ", data[5:])
-        print("prefix.hex(): ", data[5:].hex())
+        #print("prefix: ", data[5:])
+        #print("prefix.hex(): ", data[5:].hex())
         if data[:5] == b"json|":
-            self.interpret_json(data[5:]) 
+            self.interpret_json(img.name, data[5:]) 
         elif data[:6] == b"image|":
             self.replace_image(img.name, data[6:]) # TODO: Do away with the unnecessary copying
+        else:
             print("Failed to interpret message")
         return
         #elif command == "replace_image":
@@ -118,15 +122,20 @@ class MML():
             print("ERROR: first two bytes do not correspond to a valid prefix.")
 
     @classmethod
-    def interpret_json(self, data):
+    def interpret_json(self, img, data):
         data = json.loads(data)
-        print("json_data: ", data)
+        #print("json_data: ", data)
         if not self.key_check(data):
             print("Key check fail")
             return
         command = data["command"]
         if command == "pong":
             print("Pong")
+        if command == "init_parameters":
+            print("Initializing parameters ({})".format(data["parameters_type"]))
+            #if data["parameters_type"] == "remote":
+            MML.initialize_parameters(img, data)
+            
 
     @classmethod
     def replace_image(self, image_name, data):
@@ -150,17 +159,25 @@ class MML():
         print("Remote: ", remote)
         img = bpy.data.images[image_name]
         parameters = None
-        if remote:
+        if data["parameters_type"] == "remote":
+            print("\n\n\n#### Remote")
             parameters = img.mml_remote_parameters
-        else:
+        elif data["parameters_type"] == "local":
+            print("\n\n\n#### Local")
             parameters = img.mml_local_parameters
+        else:
+            print("\n\n\n#### Error")
+            print("ERROR: Incorrect parameters type on initialization.")
         parameters.clear()
         #img.mml_remote_parameters.clear()
-        string_data = data.decode('utf-8')
-        print("string_data: ", string_data)
-        json_data = json.loads(string_data)
+        
+        #string_data = data.decode('utf-8')
+        #print("string_data: ", string_data)
+        #json_data = json.loads(string_data)
+        #json_data = json.loads(data)
+        received_parameters_data = data["parameters"]
 
-        for entry in json_data:
+        for entry in received_parameters_data:
             param_identifier = "{}/{}".format(entry['node'], entry['param_label'])
             #new_parameter = img.mml_remote_parameters.add()
             new_parameter = parameters.add()

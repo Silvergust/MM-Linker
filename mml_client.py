@@ -70,17 +70,17 @@ class MMLClient:
         
             
     def send(self, data):
-        print("Send()")
+        #print("Send()")
         self.data_to_send.append(data)
         
     def send_json(self, data):
-        print("Sending ", data)
+        #print("Sending ", data)
         #self.data_to_send.append(str(data))
         self.data_to_send.append(data)
         
         
     def send_command(self, command, image_name, data):
-        print("send_command_data")
+        #print("send_command_data")
         self.data_to_send.append("{}|{}|{}".format(command, image_name, data))
          
     def get_status_string(self):
