@@ -70,17 +70,13 @@ class MMLClient:
         
             
     def send(self, data):
-        #print("Send()")
         self.data_to_send.append(data)
         
     def send_json(self, data):
-        #print("Sending ", data)
-        #self.data_to_send.append(str(data))
         self.data_to_send.append(data)
         
         
     def send_command(self, command, image_name, data):
-        #print("send_command_data")
         self.data_to_send.append("{}|{}|{}".format(command, image_name, data))
          
     def get_status_string(self):
@@ -90,9 +86,6 @@ class OBJECT_OT_connect(bpy.types.Operator):
     """Attempt to connect MML client to server."""
     bl_idname = "image.mml_connect"
     bl_label = "MML Connect"
-    #data_to_send: bpy.props.StringProperty(name="data")
-    #image_name: bpy.props.StringProperty(name='image_name')
-    #expected_packets: bpy.props.IntProperty(name='expected_packets')
     
     @classmethod
     def poll(cls, context):
@@ -100,9 +93,4 @@ class OBJECT_OT_connect(bpy.types.Operator):
 
     def execute(self, context):
         MMLClient.instance.begin_connect_thread()
-#        print("Sending data: ")
-#        #MMLClient.instance.send_command(mml.MML.commands_dict['connect'], self.image_name, self.data_to_send)
-#        connection = threading.Thread(target = MMLClient.instance.start_connection)
-#        connection.daemon = True
-#        connection.start()
         return {'FINISHED'}
