@@ -1,6 +1,7 @@
 import bpy
 import json
 import pathlib
+import textwrap
 
 import sys
 import os
@@ -39,6 +40,8 @@ class MMLPanel(bpy.types.Panel):
 
         row = layout.row()
         row.label(text="Status: {}".format(self.mml_client.instance.get_status_string()))
+        row = layout.row()
+        row.label(text="MM Server Info:".format(mml.MML.info_message))
         row = layout.row()
         layout.prop(img.mml_properties, 'ptex_filepath')
         row = layout.row()

@@ -22,7 +22,7 @@ def update_test(self, context):
             #print("command_prefix: ", command_prefix)
             #mml_client.MMLClient.instance.send_command(MML.commands_dict['set_parameter_value'], self.owner_image.name, data_to_send)
             #mml_client.MMLClient.instance.send_command(command_prefix, self.owner_image.name, data_to_send)
-            data_to_send = json.dumps({ "command":"parameter_change", "parameter_label":self.name, "parameter_value":self.value, "image_name":owner_image.name, "parameter_type":"remote" if self.is_remote else "local" })
+            data_to_send = json.dumps({ "command":"parameter_change", "parameter_label":self.name, "parameter_value":self.value, "image_name":self.owner_image.name, "render":"True", "parameter_type":"remote" if self.is_remote else "local" })
             mml_client.MMLClient.instance.send_json(data_to_send)
 
 #types_enum =  [ ("INT", "Int") ]
@@ -65,10 +65,14 @@ class MML():
 #    }
     command_key_requirements = {
         "pong" : [],
-        "replace_image" : ["image_data"], # TODO: Make use of image names for proper identification
-        "init_parameters" : ["parameters_type", "parameters"]
+        "replace_image" : ["image_name", "image_data"], # TODO: Make use of image names for proper identification
+        "init_parameters" : ["image_name", "parameters_type", "parameters"],
+        "inform" : ["info"],
+        "request_parameters": ["image_name"]
     }
+    info_message = ""
     received_messages = []
+    is_ready = False
 
     @classmethod
     def key_check(self, data):
@@ -86,11 +90,7 @@ class MML():
         if data[:5] == b"json|":
             self.interpret_json(data[5:]) 
         elif data[:6] == b"image|":
-            print("data[:12]: ", data[:20])
-            print("data[6:9]: ", data[6:9])
             padding = int(data[6:9])
-            print("padding: ", padding)
-            print("prefix image name: ", data[10:padding-1])
             image_name = str(data[10:padding-1])[2:-1]
             self.replace_image(image_name, data[padding:]) # TODO: Do away with the unnecessary copying
         else:
@@ -124,10 +124,22 @@ class MML():
         command = data["command"]
         if command == "pong":
             print("Pong")
-        if command == "init_parameters":
+        elif command == "init_parameters":
             print("Initializing parameters ({})".format(data["parameters_type"]))
             MML.initialize_parameters(data)
-            
+        elif command == "inform":
+            MML.info_message = data["info"]
+        elif command == "request_parameters":
+            data_to_send = { "command":"set_multiple_parameters", "parameters":[] }
+            img = bpy.data.images[data["image_name"]]
+            for parameter in img.mml_remote_parameters:
+                parameter_data = json.dumps({ "parameter_label":parameter.name, "parameter_value":parameter.value, "image_name":parameter.owner_image.name, "render":"False", "parameter_type":"remote"})
+                data_to_send["parameters"].append(parameter_data)
+            for parameter in img.mml_local_parameters:
+                parameter_data = json.dumps({ "parameter_label":parameter.name, "parameter_value":parameter.value, "image_name":parameter.owner_image.name, "render":"False", "parameter_type":"local"})
+                data_to_send["parameters"].append(parameter_data)
+                mml_client.MMLClient.instance.send_json(json.dumps(data_to_send))
+
 
     @classmethod
     def replace_image(self, image_name, data):
@@ -149,7 +161,7 @@ class MML():
 
 
     @classmethod
-    def initialize_parameters(self, image_name, data, remote=False):
+    def initialize_parameters(self, data, remote=False):
         print("initialize_parameters")
         print("Remote: ", remote)
         img = bpy.data.images[data["image_name"]]
