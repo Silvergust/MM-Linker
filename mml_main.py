@@ -22,7 +22,7 @@ def update_test(self, context):
             #print("command_prefix: ", command_prefix)
             #mml_client.MMLClient.instance.send_command(MML.commands_dict['set_parameter_value'], self.owner_image.name, data_to_send)
             #mml_client.MMLClient.instance.send_command(command_prefix, self.owner_image.name, data_to_send)
-            data_to_send = json.dumps({ "command":"parameter_change", "parameter_label":self.name, "parameter_value":self.value, "parameter_type":"remote" if self.is_remote else "local" })
+            data_to_send = json.dumps({ "command":"parameter_change", "parameter_label":self.name, "parameter_value":self.value, "image_name":owner_image.name, "parameter_type":"remote" if self.is_remote else "local" })
             mml_client.MMLClient.instance.send_json(data_to_send)
 
 #types_enum =  [ ("INT", "Int") ]
@@ -82,35 +82,41 @@ class MML():
         return True
         
     @classmethod
-    def interpret(self, img, data):
+    def interpret(self, data):
         if data[:5] == b"json|":
-            self.interpret_json(img.name, data[5:]) 
+            self.interpret_json(data[5:]) 
         elif data[:6] == b"image|":
-            self.replace_image(img.name, data[6:]) # TODO: Do away with the unnecessary copying
+            print("data[:12]: ", data[:20])
+            print("data[6:9]: ", data[6:9])
+            padding = int(data[6:9])
+            print("padding: ", padding)
+            print("prefix image name: ", data[10:padding-1])
+            image_name = str(data[10:padding-1])[2:-1]
+            self.replace_image(image_name, data[padding:]) # TODO: Do away with the unnecessary copying
         else:
             print("Failed to interpret message")
         return
         
-        prefix = data[:MML.command_size]
-        dummy, image_name, arguments = str(data).split("|")[:3] # WHen the image data is turned to a string, it may end up having another divider
-        pad = 2 + 2 + len(image_name)
-        print(prefix.hex())
-        if prefix.hex() == MML.commands_dict["connect"]: #"0001":
-            print("pad: ", pad)
-            MML.replace_image(image_name, data[pad:])
-        elif prefix.hex() == MML.commands_dict["initialize_parameters"]:
-            MML.initialize_parameters(image_name, data[pad:])
-        elif prefix.hex() == MML.commands_dict["set_parameter_value"]:
-            MML.set_parameter_values(image_name, data[pad:])
-        elif prefix.hex() == MML.commands_dict["initialize_remote_parameters"]:
-            MML.initialize_parameters(image_name, data[pad:], True)
-        elif prefix.hex() == MML.commands_dict["ping"]:
-            print("Pong")
-        else:
-            print("ERROR: first two bytes do not correspond to a valid prefix.")
+#        prefix = data[:MML.command_size]
+#        dummy, image_name, arguments = str(data).split("|")[:3] # WHen the image data is turned to a string, it may end up having another divider
+#        pad = 2 + 2 + len(image_name)
+#        print(prefix.hex())
+#        if prefix.hex() == MML.commands_dict["connect"]: #"0001":
+#            print("pad: ", pad)
+#            MML.replace_image(image_name, data[pad:])
+#        elif prefix.hex() == MML.commands_dict["initialize_parameters"]:
+#            MML.initialize_parameters(image_name, data[pad:])
+#        elif prefix.hex() == MML.commands_dict["set_parameter_value"]:
+#            MML.set_parameter_values(image_name, data[pad:])
+#        elif prefix.hex() == MML.commands_dict["initialize_remote_parameters"]:
+#            MML.initialize_parameters(image_name, data[pad:], True)
+#        elif prefix.hex() == MML.commands_dict["ping"]:
+#            print("Pong")
+#        else:
+#            print("ERROR: first two bytes do not correspond to a valid prefix.")
 
     @classmethod
-    def interpret_json(self, img, data):
+    def interpret_json(self, data):
         data = json.loads(data)
         if not self.key_check(data):
             print("Key check fail")
@@ -120,11 +126,12 @@ class MML():
             print("Pong")
         if command == "init_parameters":
             print("Initializing parameters ({})".format(data["parameters_type"]))
-            MML.initialize_parameters(img, data)
+            MML.initialize_parameters(data)
             
 
     @classmethod
     def replace_image(self, image_name, data):
+        print("image_name: ", image_name)
         img = bpy.data.images[image_name]
         print("replace_image, image: ", image_name)
         t0 = time.time()
@@ -145,7 +152,7 @@ class MML():
     def initialize_parameters(self, image_name, data, remote=False):
         print("initialize_parameters")
         print("Remote: ", remote)
-        img = bpy.data.images[image_name]
+        img = bpy.data.images[data["image_name"]]
         parameters = None
         if data["parameters_type"] == "remote":
             print("\n\n\n#### Remote")

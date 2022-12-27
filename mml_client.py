@@ -24,7 +24,7 @@ class MMLClient:
         elif MMLClient.instance != self:
             del self
             return
-        self.image = image
+        #self.image = image
         self.status = Status.disconnected
         self.data_to_send = []
         self.begin_connect_thread()
@@ -57,7 +57,7 @@ class MMLClient:
                 while len(websocket.messages) > 0:
                     message = websocket.messages.popleft()
                     print("Handling message ", message[:140])
-                    mml.MML.interpret(self.image, message)
+                    mml.MML.interpret(message)
                 if len(self.data_to_send) > 0:
                     await websocket.send(self.data_to_send.pop())
                 if time.time() > previous_time + 5.0:
