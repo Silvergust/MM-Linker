@@ -28,10 +28,9 @@ class MMLPanel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "MML"
 
-    
     def __init__(self):
         img = bpy.context.area.spaces.active.image
-        self.mml_client = mml_client.MMLClient(img)
+        self.mml_client = mml_client.MMLClient()
 
     def draw(self, context):
         layout = self.layout
@@ -41,83 +40,35 @@ class MMLPanel(bpy.types.Panel):
         row = layout.row()
         row.label(text="Status: {}".format(self.mml_client.instance.get_status_string()))
         row = layout.row()
-        row.label(text="MM Server Info:".format(mml.MML.info_message))
+        row.label(text=mml.MML.info_message)
         row = layout.row()
         layout.prop(img.mml_properties, 'ptex_filepath')
-        row = layout.row()
-        layout.prop(img.mml_properties, 'use_remote_parameters')
         
         row = layout.row()
         connect_button = layout.operator(mml_client.OBJECT_OT_connect.bl_idname, text="Connect to MM")
-        row = layout.row()
-        ptex_button = layout.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Submit PTex to MM")
-        ptex_button.data_to_send = bpy.path.abspath(img.mml_properties.ptex_filepath)
-        ptex_button.expected_packets = 2
-        ptex_button.image_name = img.name
-        #send_ptex_button = layout.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Send PTex")
-        #send_ptex_button.image_name = img.name
-        #connect_button = layout.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Set resolution")
-        #connect_button.data_to_send = img.size
+        
+        row1 = self.layout.row()   
+        ptex_button = row1.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Submit PTex to MM")   
+        row2 = self.layout.row()
+        ptex_with_params_button = row2.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Submit and reset Parameters")   
+        for button in [ptex_button, ptex_with_params_button]:
+            button.data_to_send = bpy.path.abspath(img.mml_properties.ptex_filepath)
+            button.image_name = img.name
+        ptex_with_params_button.reset_parameters = True
+        for r in [row1, row2]:
+            r.enabled = self.mml_client.instance.status == mml_client.Status.connected
         
         row = layout.row()
+        layout.prop(img.mml_properties, 'use_remote_parameters')
+        row = self.layout.row()
         if (img.mml_properties.use_remote_parameters):
             row.template_list("UI_UL_ParamsList", "The_List", img,
                           "mml_remote_parameters", img, "params_list_index")
         else:
             row.template_list("UI_UL_ParamsList", "The_List", img,
                           "mml_local_parameters", img, "params_list_index")
-                          
+        row.enabled = mml.MML.is_ready()
             
-#    def get_status_text(self):
-#        if self.connection_status == ConnectionStatus.Disconnected:
-#            return "Disconnected."
-#        if self.connection_status == ConnectionStatus.Connected:
-#            return "Connected."
-            
-            
-#class OBJECT_OT_create_ptex_props(bpy.types.Operator):
-#    bl_idname = "image.create_ptex_props"
-#    bl_label = "Create PTex Properties"
-#    bl_options = {'REGISTER', 'UNDO'}
-
-#    def get_ptex_parameters(self):
-#        img = bpy.context.area.spaces.active.image
-#        if not 'ptex_filepath' in img:
-#            print("Error: no correct ptex filepath in image {}".format(img))
-#            return []
-#        try:
-#            directory = str(pathlib.Path(__file__).parent) + img["ptex_filepath"]
-#            file = open(directory, 'r')
-#            json_file = json.load(file)
-#            file.close()
-#        except FileNotFoundError as error:
-#            print("FileNotFoundError: ", error.strerror)
-#            print(error.strerror)
-#            return []
-
-#        output = []
-#        for node in json_file["nodes"]:
-#            if "type" in node and node["type"] == "remote":
-#                for param_key in node["parameters"]:
-#                    print("Found parameter {} with value {}".format(str(param_key), str(node["parameters"][param_key])))
-#                    output.append("{} :: {}".format(param_key, node["parameters"][param_key]))        
-#        print("Returning ", output)
-#        return output
-#       
-#    def execute(self, context):
-#        img = bpy.context.area.spaces.active.image
-#        img.mml_local_parameters.clear()
-#        img.mml_remote_parameters.clear()
-#        ptex_parameters = self.get_ptex_parameters()
-#        properties = []
-#        i=0
-#        for param in ptex_parameters:
-#            print("Adding param {} as a new mml_parameter property to the material".format(param))
-#            i += 1
-#            new_parameter = img.mml_remote_parameters.add()
-#            new_parameter.parameter = "dfdf " + str(i)
-#        print("Created ptex properties")
-#        return {'FINISHED'}
 
 def update_test(self, context):
     print("Update_test: ", self)

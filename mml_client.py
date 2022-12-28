@@ -18,13 +18,12 @@ class MMLClient:
         Status.connected : "Connected"
     }
     
-    def __init__(self, image): # At some point I'll have to do without an img argument/field, tentatively here for the purpose of testing.
+    def __init__(self): # At some point I'll have to do without an img argument/field, tentatively here for the purpose of testing.
         if MMLClient.instance == None:
             MMLClient.instance = self
         elif MMLClient.instance != self:
             del self
             return
-        #self.image = image
         self.status = Status.disconnected
         self.data_to_send = []
         self.begin_connect_thread()
@@ -62,11 +61,11 @@ class MMLClient:
                     await websocket.send(self.data_to_send.pop())
                 if time.time() > previous_time + 5.0:
                     previous_time = time.time()
-                    #data = json.dumps('{"command":"ping"}')
                     data = json.dumps({"command":"ping"})
                     self.send_json(data)
                 await asyncio.sleep(0.01)
-            print("End")
+            print("Disconnected from MM")
+            mml.MML.on_disconnect()
         
             
     def send(self, data):

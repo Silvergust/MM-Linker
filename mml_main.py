@@ -54,25 +54,17 @@ class Commands:
     
     
 class MML():
-    command_size = 2
-#    commands_dict = {
-#        "connect" : "0001",
-#        "initialize_parameters" : "0002",
-#        "set_parameter_value" : "0003",
-#        "initialize_remote_parameters" : "0004",
-#        "set_remote_parameter_value" : "0005",
-#        "ping" : "0006"
-#    }
     command_key_requirements = {
         "pong" : [],
         "replace_image" : ["image_name", "image_data"], # TODO: Make use of image names for proper identification
         "init_parameters" : ["image_name", "parameters_type", "parameters"],
         "inform" : ["info"],
-        "request_parameters": ["image_name"]
+        "request_parameters": ["image_name"],
+        "parameters_loaded": []
     }
     info_message = ""
     received_messages = []
-    is_ready = False
+    mm_parameters_loaded = False
 
     @classmethod
     def key_check(self, data):
@@ -96,25 +88,7 @@ class MML():
         else:
             print("Failed to interpret message")
         return
-        
-#        prefix = data[:MML.command_size]
-#        dummy, image_name, arguments = str(data).split("|")[:3] # WHen the image data is turned to a string, it may end up having another divider
-#        pad = 2 + 2 + len(image_name)
-#        print(prefix.hex())
-#        if prefix.hex() == MML.commands_dict["connect"]: #"0001":
-#            print("pad: ", pad)
-#            MML.replace_image(image_name, data[pad:])
-#        elif prefix.hex() == MML.commands_dict["initialize_parameters"]:
-#            MML.initialize_parameters(image_name, data[pad:])
-#        elif prefix.hex() == MML.commands_dict["set_parameter_value"]:
-#            MML.set_parameter_values(image_name, data[pad:])
-#        elif prefix.hex() == MML.commands_dict["initialize_remote_parameters"]:
-#            MML.initialize_parameters(image_name, data[pad:], True)
-#        elif prefix.hex() == MML.commands_dict["ping"]:
-#            print("Pong")
-#        else:
-#            print("ERROR: first two bytes do not correspond to a valid prefix.")
-
+    
     @classmethod
     def interpret_json(self, data):
         data = json.loads(data)
@@ -139,6 +113,9 @@ class MML():
                 parameter_data = json.dumps({ "parameter_label":parameter.name, "parameter_value":parameter.value, "image_name":parameter.owner_image.name, "render":"False", "parameter_type":"local"})
                 data_to_send["parameters"].append(parameter_data)
                 mml_client.MMLClient.instance.send_json(json.dumps(data_to_send))
+            print(data_to_send)
+        elif command == "parameters_loaded":
+            MML.mm_parameters_loaded = True
 
 
     @classmethod
@@ -190,8 +167,15 @@ class MML():
             parameters[param_identifier].should_update = True
         return
 
-
     @classmethod
     def set_parameter_values(self, image_name, data):
         print("set_parameter_values()")
         img = bpy.data.images[image_name]
+        
+    @classmethod
+    def is_ready(self):
+        return mml_client.MMLClient.instance.status == mml_client.Status.connected and MML.mm_parameters_loaded
+    
+    @classmethod
+    def on_disconnect(self):
+        MML.mm_parameters_loaded = False
