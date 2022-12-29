@@ -16,16 +16,8 @@ class MMLProperties(bpy.types.PropertyGroup):
 def update_test(self, context):
         print("Value changed")
         if self.should_update:
-            print("Updating.")
-            #data_to_send = str(self.name) + ":" + str(self.value)
-            #command_prefix = MML.commands_dict['set_remote_parameter_value'] if self.is_remote else MML.commands_dict['set_parameter_value']
-            #print("command_prefix: ", command_prefix)
-            #mml_client.MMLClient.instance.send_command(MML.commands_dict['set_parameter_value'], self.owner_image.name, data_to_send)
-            #mml_client.MMLClient.instance.send_command(command_prefix, self.owner_image.name, data_to_send)
-            data_to_send = json.dumps({ "command":"parameter_change", "parameter_label":self.name, "parameter_value":self.value, "image_name":self.owner_image.name, "render":"True", "parameter_type":"remote" if self.is_remote else "local" })
+            data_to_send = json.dumps({ "command":"parameter_change", "parameter_label":self.name, "parameter_value":self.value, "image_name":self.owner_image.name, "resolution":self.owner_image.size[0], "render":"True", "parameter_type":"remote" if self.is_remote else "local" })
             mml_client.MMLClient.instance.send_json(data_to_send)
-
-#types_enum =  [ ("INT", "Int") ]
 
 class MMLParameters(bpy.types.PropertyGroup): # TODO: Control variable type for material nodes (MM doesn't handle them for "free" the way it does for other nodes)
     label: bpy.props.StringProperty()
@@ -83,8 +75,10 @@ class MML():
             self.interpret_json(data[5:]) 
         elif data[:6] == b"image|":
             padding = int(data[6:9])
-            image_name = str(data[10:padding-1])[2:-1]
-            self.replace_image(image_name, data[padding:]) # TODO: Do away with the unnecessary copying
+            image_name = str(data[10:padding-3])[2:-1]
+            channels_amount = int(data[padding-2:padding-1])
+            print(data[padding-3:padding-0])
+            self.replace_image(image_name, channels_amount, data[padding:]) # TODO: Do away with the unnecessary copying
         else:
             print("Failed to interpret message")
         return
@@ -97,7 +91,8 @@ class MML():
             return
         command = data["command"]
         if command == "pong":
-            print("Pong")
+            #print("Pong")
+            pass
         elif command == "init_parameters":
             print("Initializing parameters ({})".format(data["parameters_type"]))
             MML.initialize_parameters(data)
@@ -119,18 +114,35 @@ class MML():
 
 
     @classmethod
-    def replace_image(self, image_name, data):
+    def replace_image(self, image_name, channels_amount, data):
         print("image_name: ", image_name)
-        img = bpy.data.images[image_name]
+        #size = int(math.sqrt(len(data)/channels_amount))
+#        size = int(math.sqrt(len(data)//channels_amount))
+        if image_name in bpy.data.images:
+            img = bpy.data.images[image_name]
+        else:
+            img = bpy.data.images.new(name=image_name, width=size, height=size)
         print("replace_image, image: ", image_name)
-        t0 = time.time()
+        
         print("Len(data): ", len(data))
-        size = int(math.sqrt(len(data)))
-        img.scale(size, size)
-        #if len(img.pixels) != len(data):
-        #    print("ERROR: Expected data of size {}, got {}".format(len(img.pixels), len(data)))
-        #    return
-        img.pixels.foreach_set(img.channels*[byte / 255.0 for byte in data])
+        
+        #img.scale(size, size)
+        print("channels_amount: ", channels_amount)
+        print("len(img.pixels): ", len(img.pixels))
+        print("len(data): ", len(data))
+        print("len(data)/channels_amount): ", len(data)/channels_amount)
+        print("math.sqrt(len(data)/channels_amount): ", math.sqrt(len(data)/channels_amount))
+        #print("size: ", size)
+        #incoming_pixels_amount = len(data)
+        #print("incoming pixels amount: ", incoming_pixels_amount)
+        t0 = time.time()
+        #if len(img.pixels) != incoming_pixels_amount:
+        if len(img.pixels) != len(data):
+            #print("ERROR: Expected data of size {}, got {}".format(len(img.pixels), incoming_pixels_amount))
+            print("ERROR: Expected data of size {}, got {}".format(len(img.pixels), len(data)))
+            return
+        #img.pixels.foreach_set(img.channels*[byte / 255.0 for byte in data])
+        img.pixels.foreach_set([byte / 255.0 for byte in data])
         img.pack()
         img.update()
         bpy.context.view_layer.update()

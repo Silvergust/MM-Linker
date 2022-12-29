@@ -55,7 +55,7 @@ class MMLClient:
                     break
                 while len(websocket.messages) > 0:
                     message = websocket.messages.popleft()
-                    print("Handling message ", message[:140])
+                    #print("Handling message ", message[:140])
                     mml.MML.interpret(message)
                 if len(self.data_to_send) > 0:
                     await websocket.send(self.data_to_send.pop())

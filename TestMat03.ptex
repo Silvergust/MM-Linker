@@ -1,7 +1,37 @@
 {
 	"connections": [
 		{
+			"from": "text",
+			"from_port": 0,
+			"to": "Material",
+			"to_port": 1
+		},
+		{
+			"from": "text_2",
+			"from_port": 0,
+			"to": "Material",
+			"to_port": 2
+		},
+		{
+			"from": "text_3",
+			"from_port": 0,
+			"to": "Material",
+			"to_port": 3
+		},
+		{
+			"from": "text_4",
+			"from_port": 0,
+			"to": "Material",
+			"to_port": 4
+		},
+		{
 			"from": "bricks",
+			"from_port": 0,
+			"to": "blend",
+			"to_port": 2
+		},
+		{
+			"from": "blend",
 			"from_port": 0,
 			"to": "Material",
 			"to_port": 0
@@ -21,8 +51,8 @@
 			},
 			"name": "Material",
 			"node_position": {
-				"x": 218,
-				"y": -99
+				"x": 310,
+				"y": -127
 			},
 			"parameters": {
 				"albedo_color": {
@@ -35,7 +65,7 @@
 				"ao": 1,
 				"depth_scale": 0.5,
 				"emission_energy": 1,
-				"flags_transparent": true,
+				"flags_transparent": 0,
 				"metallic": 0,
 				"normal": 1,
 				"roughness": 1,
@@ -49,8 +79,8 @@
 		{
 			"name": "bricks",
 			"node_position": {
-				"x": -164,
-				"y": -107
+				"x": -361,
+				"y": -218
 			},
 			"parameters": {
 				"bevel": 0.1,
@@ -70,8 +100,8 @@
 		{
 			"name": "remote_1",
 			"node_position": {
-				"x": 72.733307,
-				"y": -213.5
+				"x": -31.266693,
+				"y": -292.5
 			},
 			"parameters": {
 				"param0": 1,
@@ -125,6 +155,92 @@
 					"type": "linked_control"
 				}
 			]
+		},
+		{
+			"name": "text",
+			"node_position": {
+				"x": 3.244446,
+				"y": -90.166656
+			},
+			"parameters": {
+				"center": 0,
+				"font": "",
+				"font_size": 256,
+				"text": "Metallic",
+				"x": -0.4,
+				"y": -0.4
+			},
+			"seed": 0,
+			"seed_locked": false,
+			"type": "text"
+		},
+		{
+			"name": "text_2",
+			"node_position": {
+				"x": -170.755554,
+				"y": 106.833344
+			},
+			"parameters": {
+				"center": 0,
+				"font": "",
+				"font_size": 256,
+				"text": "Roughness",
+				"x": -0.4,
+				"y": -0.4
+			},
+			"seed": 0,
+			"seed_locked": false,
+			"type": "text"
+		},
+		{
+			"name": "text_3",
+			"node_position": {
+				"x": -59.755554,
+				"y": 162.503342
+			},
+			"parameters": {
+				"center": 0,
+				"font": "",
+				"font_size": 256,
+				"text": "Emission",
+				"x": -0.4,
+				"y": -0.4
+			},
+			"seed": 0,
+			"seed_locked": false,
+			"type": "text"
+		},
+		{
+			"name": "text_4",
+			"node_position": {
+				"x": -2.755554,
+				"y": 248.503372
+			},
+			"parameters": {
+				"center": 0,
+				"font": "",
+				"font_size": 256,
+				"text": "Normal",
+				"x": -0.4,
+				"y": -0.4
+			},
+			"seed": 0,
+			"seed_locked": false,
+			"type": "text"
+		},
+		{
+			"name": "blend",
+			"node_position": {
+				"x": -117.469849,
+				"y": -134.832367
+			},
+			"parameters": {
+				"amount": 0.5,
+				"blend_type": 0
+			},
+			"seed": 0,
+			"seed_locked": false,
+			"type": "blend"
 		}
 	],
 	"parameters": {
