@@ -59,6 +59,10 @@ class MMLPanel(bpy.types.Panel):
             r.enabled = self.mml_client.instance.status == mml_client.Status.connected
         
         row = layout.row()
+        #layout.prop(img.mml_properties, 'request_emission')
+        layout.prop(img.mml_properties, 'request_albedo')
+        
+        row = layout.row()
         layout.prop(img.mml_properties, 'use_remote_parameters')
         row = self.layout.row()
         if (img.mml_properties.use_remote_parameters):

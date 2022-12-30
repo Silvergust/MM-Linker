@@ -12,12 +12,59 @@ class MMLProperties(bpy.types.PropertyGroup):
     ptex_filepath: bpy.props.StringProperty(name = "PTex Filepath", subtype='FILE_PATH')
     ptex_data: bpy.props.StringProperty(name="PTex Data")
     use_remote_parameters: bpy.props.BoolProperty(name="Use remote parameters")
+    request_albedo: bpy.props.BoolProperty(name="Request albedo map")
+    request_metallicity: bpy.props.BoolProperty(name="Request metallicity map")
+    request_roughness: bpy.props.BoolProperty(name="Request roughness map")
+    request_emission: bpy.props.BoolProperty(name="Request emission map")
+    request_normal: bpy.props.BoolProperty(name="Request normal map")
+    request_occlusion: bpy.props.BoolProperty(name="Request ambient occlusion map")
+    request_depth: bpy.props.BoolProperty(name="Request depth map")
+    request_opacity: bpy.props.BoolProperty(name="Request opacity map")
+    request_sss: bpy.props.BoolProperty(name="Request SSS map")
+#    
+#    request_prop_to_string: {
+#        self.request_albedo: "albedo",
+#        self.request_roughness: "roughness",
+#        self.request_metallicity: "metal",
+#        self.request_normal: "normal",
+#        self.request_occlusion : "occlusion"
+#    }
 
 def update_test(self, context):
         print("Value changed")
         if self.should_update:
-            data_to_send = json.dumps({ "command":"parameter_change", "parameter_label":self.name, "parameter_value":self.value, "image_name":self.owner_image.name, "resolution":self.owner_image.size[0], "render":"True", "parameter_type":"remote" if self.is_remote else "local" })
-            mml_client.MMLClient.instance.send_json(data_to_send)
+            #data_to_send = json.dumps({ "command":"parameter_change", "parameter_label":self.name, "parameter_value":self.value, "image_name":self.owner_image.name, "resolution":self.owner_image.size[0], "render":"True", "parameter_type":"remote" if self.is_remote else "local" })
+            #mml_client.MMLClient.instance.send_json(data_to_send)
+            data_to_send = {}
+            data_to_send["command"] = "parameter_change"
+            data_to_send["parameter_label"] = self.name
+            data_to_send["parameter_value"] = self.value
+            data_to_send["image_name"] = self.owner_image.name
+            data_to_send["resolution"] = self.owner_image.size[0]
+            data_to_send["render"] = "True"
+            data_to_send["parameter_type"] = "remote" if self.is_remote else "local"
+            maps = []
+            if self.owner_image.mml_properties.request_albedo:
+                maps.append("albedo")
+            if self.owner_image.mml_properties.request_roughness:
+                maps.append("roughness")
+            if self.owner_image.mml_properties.request_metallicity:
+                maps.append("metallicity")
+            if self.owner_image.mml_properties.request_normal:
+                maps.append("normal")
+            if self.owner_image.mml_properties.request_occlusion:
+                maps.append("occlusion")
+            if self.owner_image.mml_properties.request_emission:
+                maps.append("emission")
+            if self.owner_image.mml_properties.request_depth:
+                maps.append("depth")
+            if self.owner_image.mml_properties.request_opacity:
+                maps.append("opacity")
+            if self.owner_image.mml_properties.request_sss:
+                maps.append("sss")
+            data_to_send["maps"] = maps
+            mml_client.MMLClient.instance.send_json(json.dumps(data_to_send))
+            
 
 class MMLParameters(bpy.types.PropertyGroup): # TODO: Control variable type for material nodes (MM doesn't handle them for "free" the way it does for other nodes)
     label: bpy.props.StringProperty()
@@ -114,7 +161,7 @@ class MML():
 
 
     @classmethod
-    def replace_image(self, image_name, channels_amount, data):
+    def replace_image(self, image_name, size_factor, data):
         print("image_name: ", image_name)
         #size = int(math.sqrt(len(data)/channels_amount))
 #        size = int(math.sqrt(len(data)//channels_amount))
@@ -125,23 +172,25 @@ class MML():
         print("replace_image, image: ", image_name)
         
         print("Len(data): ", len(data))
-        
+        #img.scale(int(img.size[0]*math.sqrt(size_factor)), int(img.size[1]*math.sqrt(size_factor)))
         #img.scale(size, size)
-        print("channels_amount: ", channels_amount)
+        #print("channels_amount: ", channels_amount)
         print("len(img.pixels): ", len(img.pixels))
         print("len(data): ", len(data))
-        print("len(data)/channels_amount): ", len(data)/channels_amount)
-        print("math.sqrt(len(data)/channels_amount): ", math.sqrt(len(data)/channels_amount))
+        print("size_factor: ", size_factor)
+        #print("len(data)/channels_amount): ", len(data)/channels_amount)
+        #print("math.sqrt(len(data)/channels_amount): ", math.sqrt(len(data)/channels_amount))
         #print("size: ", size)
         #incoming_pixels_amount = len(data)
         #print("incoming pixels amount: ", incoming_pixels_amount)
         t0 = time.time()
         #if len(img.pixels) != incoming_pixels_amount:
         if len(img.pixels) != len(data):
-            #print("ERROR: Expected data of size {}, got {}".format(len(img.pixels), incoming_pixels_amount))
+        #    #print("ERROR: Expected data of size {}, got {}".format(len(img.pixels), incoming_pixels_amount))
             print("ERROR: Expected data of size {}, got {}".format(len(img.pixels), len(data)))
             return
         #img.pixels.foreach_set(img.channels*[byte / 255.0 for byte in data])
+        #img.pixels.foreach_set([byte / 255.0 for byte in data][::size_factor])
         img.pixels.foreach_set([byte / 255.0 for byte in data])
         img.pack()
         img.update()
