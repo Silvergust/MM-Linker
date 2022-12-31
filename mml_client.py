@@ -45,7 +45,7 @@ class MMLClient:
     async def connect(self, data):
         print("Connect()")
         
-        async with websockets.connect("ws://localhost:6000", max_size=1000000000) as websocket:
+        async with websockets.connect("ws://localhost:6001", max_size=1000000000) as websocket:
             self.status = Status.connected
             print("Connected")
             previous_time = time.time()

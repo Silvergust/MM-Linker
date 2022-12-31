@@ -21,14 +21,7 @@ class MMLProperties(bpy.types.PropertyGroup):
     request_depth: bpy.props.BoolProperty(name="Request depth map")
     request_opacity: bpy.props.BoolProperty(name="Request opacity map")
     request_sss: bpy.props.BoolProperty(name="Request SSS map")
-#    
-#    request_prop_to_string: {
-#        self.request_albedo: "albedo",
-#        self.request_roughness: "roughness",
-#        self.request_metallicity: "metal",
-#        self.request_normal: "normal",
-#        self.request_occlusion : "occlusion"
-#    }
+
 
 def update_test(self, context):
         print("Value changed")
@@ -122,10 +115,15 @@ class MML():
             self.interpret_json(data[5:]) 
         elif data[:6] == b"image|":
             padding = int(data[6:9])
-            image_name = str(data[10:padding-3])[2:-1]
-            channels_amount = int(data[padding-2:padding-1])
-            print(data[padding-3:padding-0])
-            self.replace_image(image_name, channels_amount, data[padding:]) # TODO: Do away with the unnecessary copying
+            image_name = str(data[10:padding-6])[2:-1]
+            size = int(data[padding-5:padding-1])
+            print("Padding: ", padding)
+            print(data[padding-4:padding-0])
+            print("image_name: ", image_name)
+            print("size: ", size)
+            #print("data[padding:]: ", data[padding:])
+            print("data[:padding+2]: ", data[:padding+1])
+            self.replace_image(image_name, size, data[padding:]) # TODO: Do away with the unnecessary copying
         else:
             print("Failed to interpret message")
         return
@@ -161,7 +159,7 @@ class MML():
 
 
     @classmethod
-    def replace_image(self, image_name, size_factor, data):
+    def replace_image(self, image_name, size, data):
         print("image_name: ", image_name)
         #size = int(math.sqrt(len(data)/channels_amount))
 #        size = int(math.sqrt(len(data)//channels_amount))
@@ -177,7 +175,7 @@ class MML():
         #print("channels_amount: ", channels_amount)
         print("len(img.pixels): ", len(img.pixels))
         print("len(data): ", len(data))
-        print("size_factor: ", size_factor)
+        print("size: ", size)
         #print("len(data)/channels_amount): ", len(data)/channels_amount)
         #print("math.sqrt(len(data)/channels_amount): ", math.sqrt(len(data)/channels_amount))
         #print("size: ", size)

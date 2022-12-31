@@ -46,7 +46,7 @@ class MMLPanel(bpy.types.Panel):
         
         row = layout.row()
         connect_button = layout.operator(mml_client.OBJECT_OT_connect.bl_idname, text="Connect to MM")
-        
+        #row.enabled = True
         row1 = self.layout.row()   
         ptex_button = row1.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Submit PTex to MM")   
         row2 = self.layout.row()
@@ -58,9 +58,21 @@ class MMLPanel(bpy.types.Panel):
         for r in [row1, row2]:
             r.enabled = self.mml_client.instance.status == mml_client.Status.connected
         
-        row = layout.row()
-        #layout.prop(img.mml_properties, 'request_emission')
-        layout.prop(img.mml_properties, 'request_albedo')
+        toggle = -1
+        row = layout.row(align = True)
+        row.prop(img.mml_properties, 'request_albedo', text="Albedo", toggle=toggle)
+        row.prop(img.mml_properties, 'request_metallicity', text="Metallicity", toggle=toggle)
+        row.prop(img.mml_properties, 'request_roughness', text="Roughness", toggle=toggle)
+        
+        row = layout.row(align = True)
+        row.prop(img.mml_properties, 'request_emission', text="Emission", toggle=toggle)
+        row.prop(img.mml_properties, 'request_normal', text="Normal", toggle=toggle)
+        row.prop(img.mml_properties, 'request_occlusion', text="AO", toggle=toggle)
+        
+        row = layout.row(align = True)
+        row.prop(img.mml_properties, 'request_depth', text="Depth", toggle=toggle)
+        row.prop(img.mml_properties, 'request_opacity', text="Opacity", toggle=toggle)
+        row.prop(img.mml_properties, 'request_sss', text="SSS", toggle=toggle)
         
         row = layout.row()
         layout.prop(img.mml_properties, 'use_remote_parameters')
