@@ -23,13 +23,14 @@ class MMLProperties(bpy.types.PropertyGroup):
     request_opacity: bpy.props.BoolProperty(name="Request opacity map")
     request_sss: bpy.props.BoolProperty(name="Request SSS map")
     
-    def get_render_request_data(self):
+    def get_request_render_data(self):
         print("id_data: ", self.id_data)
         data = {}
         data['image_name'] = self.id_data.name
         data['resolution'] = self.id_data.size[0]
         data['render'] = 'true'
         maps = []
+        # There should be a way to get a reference to the parameter, not just its value
         if self.request_albedo:
             maps.append("albedo")
         if self.request_roughness:
@@ -67,26 +68,7 @@ def update_test(self, context):
             #data_to_send["resolution"] = self.owner_image.size[0]
 #            data_to_send["render"] = "True"
             data_to_send["parameter_type"] = "remote" if self.is_remote else "local"
-#            maps = []
-#            if self.owner_image.mml_properties.request_albedo:
-#                maps.append("albedo")
-#            if self.owner_image.mml_properties.request_roughness:
-#                maps.append("roughness")
-#            if self.owner_image.mml_properties.request_metallicity:
-#                maps.append("metallicity")
-#            if self.owner_image.mml_properties.request_normal:
-#                maps.append("normal")
-#            if self.owner_image.mml_properties.request_occlusion:
-#                maps.append("occlusion")
-#            if self.owner_image.mml_properties.request_emission:
-#                maps.append("emission")
-#            if self.owner_image.mml_properties.request_depth:
-#                maps.append("depth")
-#            if self.owner_image.mml_properties.request_opacity:
-#                maps.append("opacity")
-#            if self.owner_image.mml_properties.request_sss:
-#                maps.append("sss")
-#            data_to_send["maps"] = maps
+
             image_rr_data = self.owner_image.mml_properties.get_render_request_data()
             for key in image_rr_data:
                 data_to_send[key] = image_rr_data[key]
@@ -106,20 +88,6 @@ class MMLParameters(bpy.types.PropertyGroup): # TODO: Control variable type for 
     def get_id(self):
         return "{}/{}".format(self.node_name, self.param_name if self.param_label == "" else self.param_label)
     
-        
-#class OBJECT_OT_initialize(bpy.types.Operator):
-#    bl_idname = "image.mml_initialize"
-#    bl_label = "MML Initialize"
-#    image_name: bpy.props.StringProperty(name='image_name')
-#    
-#    @classmethod
-#    def poll(cls, context):
-#        return context.active_object is not None
-#    
-#    def execute(self, context):
-#        bpy.data.images[image_name].mml = MML()
-#        return {'FINISHED'}
-#    
     
 class Commands:
     set_parameter_value = "0003"

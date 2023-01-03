@@ -48,17 +48,23 @@ class MMLPanel(bpy.types.Panel):
         connect_button = layout.operator(mml_client.OBJECT_OT_connect.bl_idname, text="Connect to MM")
         #row.enabled = True
         row1 = self.layout.row()   
-        ptex_button = row1.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Submit PTex to MM")   
+        ptex_button = row1.operator(mml_sender.MMLSubmit.bl_idname, text="Submit PTex to MM")   
         row2 = self.layout.row()
-        ptex_with_params_button = row2.operator(mml_sender.OBJECT_OT_send.bl_idname, text="Submit and reset Parameters")   
+        ptex_with_params_button = row2.operator(mml_sender.MMLSubmit.bl_idname, text="Submit and reset Parameters")   
+        ptex_with_params_button.reset_parameters = True
+        row3 = self.layout.row()
+        render_request_button = row3.operator(mml_sender.MMLRequestRender.bl_idname, text="Request Render")
+        render_request_button.image_name = img.name
         for button in [ptex_button, ptex_with_params_button]:
             button.data_to_send = bpy.path.abspath(img.mml_properties.ptex_filepath)
             button.image_name = img.name
-        ptex_with_params_button.reset_parameters = True
+        
         for r in [row1, row2]:
             r.enabled = self.mml_client.instance.status == mml_client.Status.connected
+        row3.enabled = mml.MML.is_ready()
         
-        print(dir(self.layout))
+        
+        self.layout.separator(factor=2)
         toggle = -1
         row = layout.row(align = True)
         row.prop(img.mml_properties, 'request_albedo', text="Albedo", toggle=toggle)
@@ -74,10 +80,12 @@ class MMLPanel(bpy.types.Panel):
         row.prop(img.mml_properties, 'request_depth', text="Depth", toggle=toggle)
         row.prop(img.mml_properties, 'request_opacity', text="Opacity", toggle=toggle)
         row.prop(img.mml_properties, 'request_sss', text="SSS", toggle=toggle)
-        
+
+        self.layout.separator(factor=2)
         row = layout.row()
-        layout.prop(img.mml_properties, 'use_remote_parameters')
-        layout.prop(img.mml_properties, 'auto_update')
+        row.prop(img.mml_properties, 'use_remote_parameters', toggle=toggle)
+        row.prop(img.mml_properties, 'auto_update', toggle=toggle)
+                
         row = self.layout.row()
         if (img.mml_properties.use_remote_parameters):
             row.template_list("UI_UL_ParamsList", "The_List", img,
@@ -115,9 +123,10 @@ def register():
     bpy.types.Image.mml_remote_parameters = bpy.props.CollectionProperty(type=mml.MMLParameters)
     bpy.types.Image.mml_local_parameters = bpy.props.CollectionProperty(type=mml.MMLParameters) # A local parameter is one from a non-remote node
     bpy.types.Image.mml_properties = bpy.props.PointerProperty(type=mml.MMLProperties, name="MML Properties", description="MML properties", update=update_test)
-    mml_sender.OBJECT_OT_send.mml_properties = bpy.props.PointerProperty(type=mml.MMLProperties, name="MML Properties", description="MML properties")
+    #mml_sender.OBJECT_OT_send.mml_properties = bpy.props.PointerProperty(type=mml.MMLProperties, name="MML Properties", description="MML properties")
     #bpy.utils.register_class(OBJECT_OT_create_ptex_props)
-    bpy.utils.register_class(mml_sender.OBJECT_OT_send)
+    bpy.utils.register_class(mml_sender.MMLSubmit)
+    bpy.utils.register_class(mml_sender.MMLRequestRender)
     bpy.utils.register_class(mml_client.OBJECT_OT_connect)
     bpy.utils.register_class(UI_UL_ParamsList)
     bpy.types.Image.params_list_index = bpy.props.IntProperty(name = "Index for ParamList",
@@ -133,7 +142,9 @@ def unregister():
     del bpy.types.Image.mml_properties
     del mml_sender.OJBECT_OT_send.mml_properties
     #bpy.utils.unregister_class(OBJECT_OT_create_ptex_props)
-    bpy.utils.unregister_class(mml_sender.OBJECT_OT_send)
+    #bpy.utils.unregister_class(mml_sender.OBJECT_OT_send)
+    bpy.utils.unregister_class(mml_sender.MMLSubmit)
+    bpy.utils.unregister_class(mml_sender.MMLRequestRender)
     bpy.utils.unregister_class(mml_client.OBJECT_OT_connect)
     bpy.utils.unregister_class(UI_UL_ParamsList)
 
