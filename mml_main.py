@@ -30,8 +30,10 @@ def update_test(self, context):
             #mml_client.MMLClient.instance.send_json(data_to_send)
             data_to_send = {}
             data_to_send["command"] = "parameter_change"
-            data_to_send["parameter_label"] = self.name
-            data_to_send["parameter_value"] = self.value
+            #data_to_send["parameter_label"] = self.name
+            data_to_send["node_name"] = self.node_name
+            data_to_send["param_name"] = self.param_name
+            data_to_send["param_value"] = self.value
             data_to_send["image_name"] = self.owner_image.name
             data_to_send["resolution"] = self.owner_image.size[0]
             data_to_send["render"] = "True"
@@ -60,11 +62,17 @@ def update_test(self, context):
             
 
 class MMLParameters(bpy.types.PropertyGroup): # TODO: Control variable type for material nodes (MM doesn't handle them for "free" the way it does for other nodes)
-    label: bpy.props.StringProperty()
+    #identifier: bpy.props.StringProperty()
+    node_name: bpy.props.StringProperty()
+    param_name: bpy.props.StringProperty()
+    param_label: bpy.props.StringProperty()
     value: bpy.props.StringProperty(update=update_test)
     owner_image: bpy.props.PointerProperty(type=bpy.types.Image)
     should_update: bpy.props.BoolProperty()
     is_remote: bpy.props.BoolProperty()
+    
+    def get_id(self):
+        return "{}/{}".format(self.node_name, self.param_name if self.param_label == "" else self.param_label)
     
         
 class OBJECT_OT_initialize(bpy.types.Operator):
@@ -147,10 +155,10 @@ class MML():
             data_to_send = { "command":"set_multiple_parameters", "parameters":[] }
             img = bpy.data.images[data["image_name"]]
             for parameter in img.mml_remote_parameters:
-                parameter_data = json.dumps({ "parameter_label":parameter.name, "parameter_value":parameter.value, "image_name":parameter.owner_image.name, "render":"False", "parameter_type":"remote"})
+                parameter_data = json.dumps({ "parameter_node_name":parameter.node_name, "parameter_name":parameter.param_name, "parameter_value":parameter.value, "image_name":parameter.owner_image.name, "render":"False", "parameter_type":"remote"})
                 data_to_send["parameters"].append(parameter_data)
             for parameter in img.mml_local_parameters:
-                parameter_data = json.dumps({ "parameter_label":parameter.name, "parameter_value":parameter.value, "image_name":parameter.owner_image.name, "render":"False", "parameter_type":"local"})
+                parameter_data = json.dumps({ "parameter_node_name":parameter.node_name, "parameter_name":parameter.param_name, "parameter_value":parameter.value, "image_name":parameter.owner_image.name, "render":"False", "parameter_type":"local"})
                 data_to_send["parameters"].append(parameter_data)
                 mml_client.MMLClient.instance.send_json(json.dumps(data_to_send))
             print(data_to_send)
@@ -215,15 +223,24 @@ class MML():
         received_parameters_data = data["parameters"]
 
         for entry in received_parameters_data:
-            param_identifier = "{}/{}".format(entry['node'], entry['param_label'])
+            print("entry['node']: ", entry['node'])
+            #param_identifier = "{}/{}".format(entry['node'], entry['param_name'])
             new_parameter = parameters.add()
-            new_parameter.name = param_identifier
-            new_parameter.node_name = entry['node']
-            new_parameter.label = entry['param_label']
+            #new_parameter.identifier = param_identifier
+            #new_parameter.node_name = entry['node']
+            #new_parameter.param_name = entry['param_name']
+            #new_parameter.name = param_identifier
             new_parameter.owner_image = img
-            parameters[param_identifier].should_update = False
-            parameters[param_identifier].value = str(entry['param_value'])
-            parameters[param_identifier].should_update = True
+            new_parameter.node_name = entry['node']
+            new_parameter.param_name = entry['param_name']
+            #parameters[param_identifier].should_update = False
+            #parameters[param_identifier].value = str(entry['param_value'])
+            #parameters[param_identifier].should_update = True
+            new_parameter.should_update = False
+            new_parameter.value = str(entry['param_value'])
+            new_parameter.should_update = True
+            #new_parameter.label = entry['param_name']
+            new_parameter.param_label = "#PARAM LABEL#"
         return
 
     @classmethod

@@ -97,7 +97,7 @@ class UI_UL_ParamsList(bpy.types.UIList):
                   active_propname, index):
         custom_icon = 'OBJECT_DATAMODE'
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.label(text=item.name, icon = custom_icon)
+            layout.label(text=item.get_id(), icon = custom_icon)
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon = custom_icon)
