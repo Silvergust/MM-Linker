@@ -40,9 +40,11 @@ class MMLPanel(bpy.types.Panel):
         row = layout.row()
         row.label(text="Status: {}".format(self.mml_client.instance.get_status_string()))
         row = layout.row()
+        #layout.prop(mml_client.MMLClient, "Port")
+        #layout.prop(mml_client.MMLClient, "port")
         row.label(text=mml.MML.info_message)
         row = layout.row()
-        layout.prop(img.mml_properties, 'ptex_filepath')
+        #layout.prop(img.mml_properties, 'ptex_filepath')
         
         row = layout.row()
         connect_button = layout.operator(mml_client.OBJECT_OT_connect.bl_idname, text="Connect to MM")
@@ -150,4 +152,4 @@ def unregister():
 
 if __name__ == "__main__":
     print("### Running MML ###")
-    register()
+    #register()

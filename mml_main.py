@@ -8,9 +8,9 @@ import math
 
 
 class MMLProperties(bpy.types.PropertyGroup):
-    shader_code: bpy.props.StringProperty()
+    port: bpy.props.IntProperty(name="Port") # Unfortunately couldn't go on something more sensible like MMLClient
     ptex_filepath: bpy.props.StringProperty(name = "PTex Filepath", subtype='FILE_PATH')
-    ptex_data: bpy.props.StringProperty(name="PTex Data")
+    #ptex_data: bpy.props.StringProperty(name="PTex Data")
     use_remote_parameters: bpy.props.BoolProperty(name="Use remote parameters")
     auto_update: bpy.props.BoolProperty(name="Auto-Update")
     request_albedo: bpy.props.BoolProperty(name="Request albedo map")
@@ -69,7 +69,7 @@ def update_test(self, context):
 #            data_to_send["render"] = "True"
             data_to_send["parameter_type"] = "remote" if self.is_remote else "local"
 
-            image_rr_data = self.owner_image.mml_properties.get_render_request_data()
+            image_rr_data = self.owner_image.mml_properties.get_request_render_data()
             for key in image_rr_data:
                 data_to_send[key] = image_rr_data[key]
             mml_client.MMLClient.instance.send_json(json.dumps(data_to_send))
@@ -89,8 +89,8 @@ class MMLParameters(bpy.types.PropertyGroup): # TODO: Control variable type for 
         return "{}/{}".format(self.node_name, self.param_name if self.param_label == "" else self.param_label)
     
     
-class Commands:
-    set_parameter_value = "0003"
+class MMLGlobalProperties(bpy.types.PropertyGroup):
+    port : bpy.props.IntProperty()
     
     
 class MML():
@@ -105,7 +105,7 @@ class MML():
     info_message = ""
     received_messages = []
     mm_parameters_loaded = False
-    auto_update = True
+    #auto_update = True
 
     @classmethod
     def key_check(self, data):
@@ -156,10 +156,10 @@ class MML():
             data_to_send = { "command":"set_multiple_parameters", "parameters":[] }
             img = bpy.data.images[data["image_name"]]
             for parameter in img.mml_remote_parameters:
-                parameter_data = json.dumps({ "parameter_node_name":parameter.node_name, "parameter_name":parameter.param_name, "parameter_value":parameter.value, "image_name":parameter.owner_image.name, "render":"False", "parameter_type":"remote"})
+                parameter_data = json.dumps({ "node_name":parameter.node_name, "param_name":parameter.param_name, "param_label":parameter.param_label, "param_value":parameter.value, "image_name":parameter.owner_image.name, "render":"False", "param_type":"remote"})
                 data_to_send["parameters"].append(parameter_data)
             for parameter in img.mml_local_parameters:
-                parameter_data = json.dumps({ "parameter_node_name":parameter.node_name, "parameter_name":parameter.param_name, "parameter_value":parameter.value, "image_name":parameter.owner_image.name, "render":"False", "parameter_type":"local"})
+                parameter_data = json.dumps({ "node_name":parameter.node_name, "param_name":parameter.param_name, "param_label":"",  "param_value":parameter.value, "image_name":parameter.owner_image.name, "render":"False", "param_type":"local"})
                 data_to_send["parameters"].append(parameter_data)
                 mml_client.MMLClient.instance.send_json(json.dumps(data_to_send))
             print(data_to_send)
@@ -245,10 +245,10 @@ class MML():
             new_parameter.param_label = entry['param_label']
         return
 
-    @classmethod
-    def set_parameter_values(self, image_name, data):
-        print("set_parameter_values()")
-        img = bpy.data.images[image_name]
+#    @classmethod
+#    def set_parameter_values(self, image_name, data):
+#        print("set_parameter_values()")
+#        img = bpy.data.images[image_name]
         
     @classmethod
     def is_ready(self):

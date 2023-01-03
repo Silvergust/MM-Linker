@@ -12,7 +12,9 @@ class Status:
     
 class MMLClient:
     instance = None
-    
+    #port = 6001
+#    port = 6001
+    #port = bpy.props.IntProperty(name="Port")
     status_strings = {
         Status.disconnected : "Disconnected",
         Status.connected : "Connected"
@@ -26,7 +28,8 @@ class MMLClient:
             return
         self.status = Status.disconnected
         self.data_to_send = []
-        self.begin_connect_thread()
+        #self.begin_connect_thread()
+        #self.port = bpy.props.IntProperty(name="Port")
         
     def begin_connect_thread(self):
         if self.status == Status.connected:
@@ -45,7 +48,7 @@ class MMLClient:
     async def connect(self, data):
         print("Connect()")
         
-        async with websockets.connect("ws://localhost:6001", max_size=1000000000) as websocket:
+        async with websockets.connect("ws://localhost:{}".format(str(self.port)), max_size=1000000000) as websocket:
             self.status = Status.connected
             print("Connected")
             previous_time = time.time()
