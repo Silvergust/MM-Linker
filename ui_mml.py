@@ -58,6 +58,7 @@ class MMLPanel(bpy.types.Panel):
         for r in [row1, row2]:
             r.enabled = self.mml_client.instance.status == mml_client.Status.connected
         
+        print(dir(self.layout))
         toggle = -1
         row = layout.row(align = True)
         row.prop(img.mml_properties, 'request_albedo', text="Albedo", toggle=toggle)
@@ -76,6 +77,7 @@ class MMLPanel(bpy.types.Panel):
         
         row = layout.row()
         layout.prop(img.mml_properties, 'use_remote_parameters')
+        layout.prop(img.mml_properties, 'auto_update')
         row = self.layout.row()
         if (img.mml_properties.use_remote_parameters):
             row.template_list("UI_UL_ParamsList", "The_List", img,

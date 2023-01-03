@@ -7,7 +7,7 @@ import time
 import mml_client
 import json
 
-class OBJECT_OT_send(bpy.types.Operator):
+class MMLSubmit(bpy.types.Operator):
     """Send shader data to the MML program."""
     bl_idname = "image.mml_send"
     bl_label = "MML Send"

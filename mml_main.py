@@ -12,6 +12,7 @@ class MMLProperties(bpy.types.PropertyGroup):
     ptex_filepath: bpy.props.StringProperty(name = "PTex Filepath", subtype='FILE_PATH')
     ptex_data: bpy.props.StringProperty(name="PTex Data")
     use_remote_parameters: bpy.props.BoolProperty(name="Use remote parameters")
+    auto_update: bpy.props.BoolProperty(name="Auto-Update")
     request_albedo: bpy.props.BoolProperty(name="Request albedo map")
     request_metallicity: bpy.props.BoolProperty(name="Request metallicity map")
     request_roughness: bpy.props.BoolProperty(name="Request roughness map")
@@ -21,11 +22,39 @@ class MMLProperties(bpy.types.PropertyGroup):
     request_depth: bpy.props.BoolProperty(name="Request depth map")
     request_opacity: bpy.props.BoolProperty(name="Request opacity map")
     request_sss: bpy.props.BoolProperty(name="Request SSS map")
+    
+    def get_render_request_data(self):
+        print("id_data: ", self.id_data)
+        data = {}
+        data['image_name'] = self.id_data.name
+        data['resolution'] = self.id_data.size[0]
+        data['render'] = 'true'
+        maps = []
+        if self.request_albedo:
+            maps.append("albedo")
+        if self.request_roughness:
+            maps.append("roughness")
+        if self.request_metallicity:
+            maps.append("metallicity")
+        if self.request_normal:
+            maps.append("normal")
+        if self.request_occlusion:
+            maps.append("occlusion")
+        if self.request_emission:
+            maps.append("emission")
+        if self.request_depth:
+            maps.append("depth")
+        if self.request_opacity:
+            maps.append("opacity")
+        if self.request_sss:
+            maps.append("sss")
+        data["maps"] = maps
+        return data
 
 
 def update_test(self, context):
         print("Value changed")
-        if self.should_update:
+        if self.should_update and self.owner_image.mml_properties.auto_update:
             #data_to_send = json.dumps({ "command":"parameter_change", "parameter_label":self.name, "parameter_value":self.value, "image_name":self.owner_image.name, "resolution":self.owner_image.size[0], "render":"True", "parameter_type":"remote" if self.is_remote else "local" })
             #mml_client.MMLClient.instance.send_json(data_to_send)
             data_to_send = {}
@@ -34,30 +63,33 @@ def update_test(self, context):
             data_to_send["node_name"] = self.node_name
             data_to_send["param_name"] = self.param_name
             data_to_send["param_value"] = self.value
-            data_to_send["image_name"] = self.owner_image.name
-            data_to_send["resolution"] = self.owner_image.size[0]
-            data_to_send["render"] = "True"
+            #data_to_send["image_name"] = self.owner_image.name
+            #data_to_send["resolution"] = self.owner_image.size[0]
+#            data_to_send["render"] = "True"
             data_to_send["parameter_type"] = "remote" if self.is_remote else "local"
-            maps = []
-            if self.owner_image.mml_properties.request_albedo:
-                maps.append("albedo")
-            if self.owner_image.mml_properties.request_roughness:
-                maps.append("roughness")
-            if self.owner_image.mml_properties.request_metallicity:
-                maps.append("metallicity")
-            if self.owner_image.mml_properties.request_normal:
-                maps.append("normal")
-            if self.owner_image.mml_properties.request_occlusion:
-                maps.append("occlusion")
-            if self.owner_image.mml_properties.request_emission:
-                maps.append("emission")
-            if self.owner_image.mml_properties.request_depth:
-                maps.append("depth")
-            if self.owner_image.mml_properties.request_opacity:
-                maps.append("opacity")
-            if self.owner_image.mml_properties.request_sss:
-                maps.append("sss")
-            data_to_send["maps"] = maps
+#            maps = []
+#            if self.owner_image.mml_properties.request_albedo:
+#                maps.append("albedo")
+#            if self.owner_image.mml_properties.request_roughness:
+#                maps.append("roughness")
+#            if self.owner_image.mml_properties.request_metallicity:
+#                maps.append("metallicity")
+#            if self.owner_image.mml_properties.request_normal:
+#                maps.append("normal")
+#            if self.owner_image.mml_properties.request_occlusion:
+#                maps.append("occlusion")
+#            if self.owner_image.mml_properties.request_emission:
+#                maps.append("emission")
+#            if self.owner_image.mml_properties.request_depth:
+#                maps.append("depth")
+#            if self.owner_image.mml_properties.request_opacity:
+#                maps.append("opacity")
+#            if self.owner_image.mml_properties.request_sss:
+#                maps.append("sss")
+#            data_to_send["maps"] = maps
+            image_rr_data = self.owner_image.mml_properties.get_render_request_data()
+            for key in image_rr_data:
+                data_to_send[key] = image_rr_data[key]
             mml_client.MMLClient.instance.send_json(json.dumps(data_to_send))
             
 
@@ -75,19 +107,19 @@ class MMLParameters(bpy.types.PropertyGroup): # TODO: Control variable type for 
         return "{}/{}".format(self.node_name, self.param_name if self.param_label == "" else self.param_label)
     
         
-class OBJECT_OT_initialize(bpy.types.Operator):
-    bl_idname = "image.mml_initialize"
-    bl_label = "MML Initialize"
-    image_name: bpy.props.StringProperty(name='image_name')
-    
-    @classmethod
-    def poll(cls, context):
-        return context.active_object is not None
-    
-    def execute(self, context):
-        bpy.data.images[image_name].mml = MML()
-        return {'FINISHED'}
-    
+#class OBJECT_OT_initialize(bpy.types.Operator):
+#    bl_idname = "image.mml_initialize"
+#    bl_label = "MML Initialize"
+#    image_name: bpy.props.StringProperty(name='image_name')
+#    
+#    @classmethod
+#    def poll(cls, context):
+#        return context.active_object is not None
+#    
+#    def execute(self, context):
+#        bpy.data.images[image_name].mml = MML()
+#        return {'FINISHED'}
+#    
     
 class Commands:
     set_parameter_value = "0003"
@@ -105,6 +137,7 @@ class MML():
     info_message = ""
     received_messages = []
     mm_parameters_loaded = False
+    auto_update = True
 
     @classmethod
     def key_check(self, data):
@@ -240,7 +273,8 @@ class MML():
             new_parameter.value = str(entry['param_value'])
             new_parameter.should_update = True
             #new_parameter.label = entry['param_name']
-            new_parameter.param_label = "#PARAM LABEL#"
+            #new_parameter.param_label = "#PARAM LABEL#"
+            new_parameter.param_label = entry['param_label']
         return
 
     @classmethod
