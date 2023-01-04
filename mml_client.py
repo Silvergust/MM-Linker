@@ -12,9 +12,6 @@ class Status:
     
 class MMLClient:
     instance = None
-    #port = 6001
-#    port = 6001
-    #port = bpy.props.IntProperty(name="Port")
     status_strings = {
         Status.disconnected : "Disconnected",
         Status.connected : "Connected"
@@ -28,8 +25,6 @@ class MMLClient:
             return
         self.status = Status.disconnected
         self.data_to_send = []
-        #self.begin_connect_thread()
-        #self.port = bpy.props.IntProperty(name="Port")
         
     def begin_connect_thread(self):
         if self.status == Status.connected:
@@ -58,16 +53,15 @@ class MMLClient:
                     break
                 while len(websocket.messages) > 0:
                     message = websocket.messages.popleft()
-                    #print("Handling message ", message[:140])
                     mml.MML.interpret(message)
                 if len(self.data_to_send) > 0:
                     await websocket.send(self.data_to_send.pop())
-                if time.time() > previous_time + 5.0:
+                if time.time() > previous_time + 20.0:
                     previous_time = time.time()
                     data = json.dumps({"command":"ping"})
                     self.send_json(data)
                 await asyncio.sleep(0.01)
-            print("Disconnected from MM")
+            MML.inform("Disconnected from MM")
             mml.MML.on_disconnect()
         
             

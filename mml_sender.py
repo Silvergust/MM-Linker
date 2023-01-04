@@ -22,8 +22,7 @@ class MMLSubmit(bpy.types.Operator):
         #return context.active_object is not None
 
     def execute(self, context):
-        print("Sending data: ")
-        #mml_client.MMLClient.instance.send_command(mml.MML.commands_dict['connect'], self.image_name, self.data_to_send)
+        mml.MML.inform("Sending data: ")
         data_dict = { "command" : "load_ptex", "reset_parameters":self.reset_parameters, "image_name":self.image_name, "filepath" : self.data_to_send }
         data = json.dumps(data_dict)
         mml_client.MMLClient.instance.send_json(data)
@@ -33,7 +32,6 @@ class MMLRequestRender(bpy.types.Operator):
     """Send a render request to the MML server."""
     bl_idname = "image.mml_request_render"
     bl_label = "MML Render Request"
-    #image: bpy.props.PointerProperty(name='image')
     image_name: bpy.props.StringProperty(name='image_name')
     
     @classmethod

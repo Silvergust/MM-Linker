@@ -31,6 +31,7 @@ class MMLPanel(bpy.types.Panel):
     def __init__(self):
         img = bpy.context.area.spaces.active.image
         self.mml_client = mml_client.MMLClient()
+        
 
     def draw(self, context):
         layout = self.layout
@@ -40,15 +41,14 @@ class MMLPanel(bpy.types.Panel):
         row = layout.row()
         row.label(text="Status: {}".format(self.mml_client.instance.get_status_string()))
         row = layout.row()
-        #layout.prop(mml_client.MMLClient, "Port")
-        #layout.prop(mml_client.MMLClient, "port")
+        layout.prop(img.mml_properties, "port")
+        mml_client.MMLClient.instance.port = img.mml_properties.port
         row.label(text=mml.MML.info_message)
         row = layout.row()
-        #layout.prop(img.mml_properties, 'ptex_filepath')
+        layout.prop(img.mml_properties, 'ptex_filepath')
         
         row = layout.row()
         connect_button = layout.operator(mml_client.OBJECT_OT_connect.bl_idname, text="Connect to MM")
-        #row.enabled = True
         row1 = self.layout.row()   
         ptex_button = row1.operator(mml_sender.MMLSubmit.bl_idname, text="Submit PTex to MM")   
         row2 = self.layout.row()
@@ -125,8 +125,6 @@ def register():
     bpy.types.Image.mml_remote_parameters = bpy.props.CollectionProperty(type=mml.MMLParameters)
     bpy.types.Image.mml_local_parameters = bpy.props.CollectionProperty(type=mml.MMLParameters) # A local parameter is one from a non-remote node
     bpy.types.Image.mml_properties = bpy.props.PointerProperty(type=mml.MMLProperties, name="MML Properties", description="MML properties", update=update_test)
-    #mml_sender.OBJECT_OT_send.mml_properties = bpy.props.PointerProperty(type=mml.MMLProperties, name="MML Properties", description="MML properties")
-    #bpy.utils.register_class(OBJECT_OT_create_ptex_props)
     bpy.utils.register_class(mml_sender.MMLSubmit)
     bpy.utils.register_class(mml_sender.MMLRequestRender)
     bpy.utils.register_class(mml_client.OBJECT_OT_connect)
@@ -138,13 +136,10 @@ def unregister():
     bpy.utils.unregister_class(mml.MMLParameters)
     bpy.utils.unregister_class(mml.MMLProperties)
     bpy.utils.unregister_class(MMLPanel)
-    #del bpy.types.Image.mml_parameters
     del bpy.types.Image.mml_remote_parameters
     del bpy.types.Image.mml_local_parameters
     del bpy.types.Image.mml_properties
     del mml_sender.OJBECT_OT_send.mml_properties
-    #bpy.utils.unregister_class(OBJECT_OT_create_ptex_props)
-    #bpy.utils.unregister_class(mml_sender.OBJECT_OT_send)
     bpy.utils.unregister_class(mml_sender.MMLSubmit)
     bpy.utils.unregister_class(mml_sender.MMLRequestRender)
     bpy.utils.unregister_class(mml_client.OBJECT_OT_connect)
@@ -152,4 +147,4 @@ def unregister():
 
 if __name__ == "__main__":
     print("### Running MML ###")
-    #register()
+    register()
