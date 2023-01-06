@@ -19,14 +19,14 @@ class MMLProperties(bpy.types.PropertyGroup):
     request_normal: bpy.props.BoolProperty(name="Request normal map")
     request_occlusion: bpy.props.BoolProperty(name="Request ambient occlusion map")
     request_depth: bpy.props.BoolProperty(name="Request depth map")
-    request_opacity: bpy.props.BoolProperty(name="Request opacity map")
+    request_transparency: bpy.props.BoolProperty(name="Request transparency map")
     request_sss: bpy.props.BoolProperty(name="Request SSS map")
     
     def get_request_render_data(self):
         data = {}
         data['image_name'] = self.id_data.name
         data['resolution'] = self.id_data.size[0]
-        data['render'] = 'true'
+        #data['render'] = 'true'
         maps = []
         # There should be a way to get a reference to the parameter, not just its value
         if self.request_albedo:
@@ -43,8 +43,8 @@ class MMLProperties(bpy.types.PropertyGroup):
             maps.append("emission")
         if self.request_depth:
             maps.append("depth")
-        if self.request_opacity:
-            maps.append("opacity")
+        #if self.request_opacity:
+        #    maps.append("transparency")
         if self.request_sss:
             maps.append("sss")
         data["maps"] = maps
@@ -52,17 +52,21 @@ class MMLProperties(bpy.types.PropertyGroup):
 
 
 def update_test(self, context):
-        if self.should_update and self.owner_image.mml_properties.auto_update:
+        if self.should_update:
             data_to_send = {}
             data_to_send["command"] = "parameter_change"
             data_to_send["node_name"] = self.node_name
             data_to_send["param_name"] = self.param_name
             data_to_send["param_value"] = self.value
-            data_to_send["parameter_type"] = "remote" if self.is_remote else "local"
+            data_to_send["parameter_type"] = "remote" if self.is_remote else "local" # TODO: Rename (e.g. "is the type int or is the type remote?")
+            data_to_send["render"] = str(self.owner_image.mml_properties.auto_update)
+            print(" A data_to_send['render']: ", data_to_send['render'])
+            print("AAAAAAAAAAAAAAAAAAA ", self.owner_image.mml_properties.auto_update)
 
             image_rr_data = self.owner_image.mml_properties.get_request_render_data()
             for key in image_rr_data:
                 data_to_send[key] = image_rr_data[key]
+            print("data_to_send['render']: ", data_to_send['render'])
             mml_client.MMLClient.instance.send_json(json.dumps(data_to_send))
             
 
@@ -163,11 +167,13 @@ class MML():
         img.update()
         bpy.context.view_layer.update()
         #bpy.context.scene.update()
-        bpy.context.scene.view_layers.update()
+        
         #for window in bpy.context.window_manager.windows:
         #    for area in window.screen.areas:
         #        if area.type == 'VIEW_3D' or area.type == 'IMAGE_EDITOR':
+        #            print("Redraw")
         #            area.tag_redraw()
+        bpy.context.scene.view_layers.update()
         MML.inform("Image replaced in {} seconds.".format(time.time() - t0))
 
 
