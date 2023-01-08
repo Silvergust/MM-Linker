@@ -6,7 +6,6 @@ import asyncio
 import time
 import math
 
-
 class MMLProperties(bpy.types.PropertyGroup):
     port: bpy.props.IntProperty(name="Port", default=6001) # Unfortunately couldn't go on something more sensible like MMLClient
     ptex_filepath: bpy.props.StringProperty(name = "PTex Filepath", subtype='FILE_PATH')
@@ -26,7 +25,6 @@ class MMLProperties(bpy.types.PropertyGroup):
         data = {}
         data['image_name'] = self.id_data.name
         data['resolution'] = self.id_data.size[0]
-        #data['render'] = 'true'
         maps = []
         # There should be a way to get a reference to the parameter, not just its value
         if self.request_albedo:
@@ -80,7 +78,6 @@ class MMLParameters(bpy.types.PropertyGroup):
     is_remote: bpy.props.BoolProperty()
     
     def get_id(self):
-        #return "{}/{}".format(self.node_name, self.param_name if self.param_label == "" else self.param_label)
         return self.param_label if self.owner_image.mml_properties.use_remote_parameters else "{}/{}".format(self.node_name, self.param_name)
     
     
@@ -166,13 +163,13 @@ class MML():
         img.pack()
         img.update()
         bpy.context.view_layer.update()
-        #bpy.context.scene.update()
         
-        #for window in bpy.context.window_manager.windows:
-        #    for area in window.screen.areas:
-        #        if area.type == 'VIEW_3D' or area.type == 'IMAGE_EDITOR':
-        #            print("Redraw")
-        #            area.tag_redraw()
+#        for window in bpy.context.window_manager.windows:
+#            window.screen.update_tag()
+#            for area in window.screen.areas:
+#                if area.type == 'VIEW_3D' or area.type == 'IMAGE_EDITOR':
+#                    print("Redraw")
+#                    area.tag_redraw()
         bpy.context.scene.view_layers.update()
         MML.inform("Image replaced in {} seconds.".format(time.time() - t0))
 

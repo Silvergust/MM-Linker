@@ -37,7 +37,6 @@ class MMLSubmit(bpy.types.Operator):
         data_dict = { "command" : "load_ptex", "reset_parameters":self.reset_parameters, "image_name":self.image_name, "filepath" : self.data_to_send }
         data = json.dumps(data_dict)
         mml_client.MMLClient.instance.send_json(data)
-        #return {'FINISHED'}
         
         wm = context.window_manager
         self._timer = wm.event_timer_add(time_step = 0.1, window=context.window)
