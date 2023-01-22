@@ -6,18 +6,18 @@ import textwrap
 import sys
 import os
 
-blend_dir = os.path.dirname(bpy.data.filepath)
-if blend_dir not in sys.path:
-    sys.path.append(blend_dir)
+#blend_dir = os.path.dirname(bpy.data.filepath)
+#if blend_dir not in sys.path:
+#    sys.path.append(blend_dir)
     
-import mml_main as mml
-import mml_sender
-import importlib
-import mml_client
+from . import mml_main as mml
+from . import mml_sender
+from . import mml_client
 
-importlib.reload(mml)
-importlib.reload(mml_sender)
-importlib.reload(mml_client)
+#import importlib
+#importlib.reload(mml)
+#importlib.reload(mml_sender)
+#importlib.reload(mml_client)
 
 
 class MMLPanel(bpy.types.Panel):
@@ -80,7 +80,7 @@ class MMLPanel(bpy.types.Panel):
         
         row = layout.row(align = True)
         row.prop(img.mml_properties, 'request_depth', text="Depth", toggle=toggle)
-        row.prop(img.mml_properties, 'request_opacity', text="Opacity", toggle=toggle)
+#        row.prop(img.mml_properties, 'request_opacity', text="Opacity", toggle=toggle)
         row.prop(img.mml_properties, 'request_sss', text="SSS", toggle=toggle)
 
         self.layout.separator(factor=2)
@@ -113,38 +113,6 @@ class UI_UL_ParamsList(bpy.types.UIList):
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon = custom_icon)
-            
-        if data.params_list_index >= 0 and data.mml_remote_parameters:
+        if data.params_list_index >= 0:
             row = layout.row()
             row.prop(item, "value", text="")
-
-def register():
-    bpy.utils.register_class(mml.MMLProperties)
-    bpy.utils.register_class(mml.MMLParameters)
-    bpy.utils.register_class(MMLPanel)
-    bpy.types.Image.mml_remote_parameters = bpy.props.CollectionProperty(type=mml.MMLParameters)
-    bpy.types.Image.mml_local_parameters = bpy.props.CollectionProperty(type=mml.MMLParameters) # A local parameter is one from a non-remote node
-    bpy.types.Image.mml_properties = bpy.props.PointerProperty(type=mml.MMLProperties, name="MML Properties", description="MML properties", update=update_test)
-    bpy.utils.register_class(mml_sender.MMLSubmit)
-    bpy.utils.register_class(mml_sender.MMLRequestRender)
-    bpy.utils.register_class(mml_client.OBJECT_OT_connect)
-    bpy.utils.register_class(UI_UL_ParamsList)
-    bpy.types.Image.params_list_index = bpy.props.IntProperty(name = "Index for ParamList",
-                                             default = 0)
-
-def unregister():
-    bpy.utils.unregister_class(mml.MMLParameters)
-    bpy.utils.unregister_class(mml.MMLProperties)
-    bpy.utils.unregister_class(MMLPanel)
-    del bpy.types.Image.mml_remote_parameters
-    del bpy.types.Image.mml_local_parameters
-    del bpy.types.Image.mml_properties
-    del mml_sender.OJBECT_OT_send.mml_properties
-    bpy.utils.unregister_class(mml_sender.MMLSubmit)
-    bpy.utils.unregister_class(mml_sender.MMLRequestRender)
-    bpy.utils.unregister_class(mml_client.OBJECT_OT_connect)
-    bpy.utils.unregister_class(UI_UL_ParamsList)
-
-if __name__ == "__main__":
-    print("### Running MML ###")
-    register()

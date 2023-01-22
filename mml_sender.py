@@ -1,10 +1,11 @@
 import bpy
-import websockets
+from . import websockets
+from . import mml_client
+from . import mml_main as mml
 import asyncio
 import os
-import mml_main as mml
 import time
-import mml_client
+
 import json
 
 class MMLSubmit(bpy.types.Operator):

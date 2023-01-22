@@ -1,7 +1,7 @@
 import bpy
 import json
-import mml_sender
-import mml_client
+from . import mml_sender
+from . import mml_client
 import asyncio
 import time
 import math
@@ -49,7 +49,7 @@ class MMLProperties(bpy.types.PropertyGroup):
         return data
 
 
-def update_test(self, context):
+def parameter_update(self, context):
         if self.should_update:
             data_to_send = {}
             data_to_send["command"] = "parameter_change"
@@ -72,7 +72,7 @@ class MMLParameters(bpy.types.PropertyGroup):
     node_name: bpy.props.StringProperty()
     param_name: bpy.props.StringProperty()
     param_label: bpy.props.StringProperty()
-    value: bpy.props.StringProperty(update=update_test)
+    value: bpy.props.StringProperty(update=parameter_update)
     owner_image: bpy.props.PointerProperty(type=bpy.types.Image)
     should_update: bpy.props.BoolProperty()
     is_remote: bpy.props.BoolProperty()
@@ -163,19 +163,12 @@ class MML():
         img.pack()
         img.update()
         bpy.context.view_layer.update()
-        
-#        for window in bpy.context.window_manager.windows:
-#            window.screen.update_tag()
-#            for area in window.screen.areas:
-#                if area.type == 'VIEW_3D' or area.type == 'IMAGE_EDITOR':
-#                    print("Redraw")
-#                    area.tag_redraw()
         bpy.context.scene.view_layers.update()
         MML.inform("Image replaced in {} seconds.".format(time.time() - t0))
 
 
     @classmethod
-    def initialize_parameters(self, data, remote=False):
+    def initialize_parameters(self, data):
         MML.inform("Initializing parameters.")
         img = bpy.data.images[data["image_name"]]
         parameters = None

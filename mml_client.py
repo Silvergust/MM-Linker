@@ -1,10 +1,11 @@
 import bpy
 import time
 import asyncio 
-import websockets
 import threading
-import mml_main as mml
 import json
+
+from . import websockets
+from . import mml_main as mml
 
 class Status:
     disconnected = 0
