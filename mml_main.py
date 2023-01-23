@@ -134,7 +134,7 @@ class MML():
         elif command == "inform":
             MML.inform(data["info"])
         elif command == "request_parameters":
-            data_to_send = { "command":"set_multiple_parameters", "parameters":[] }
+            data_to_send = { "command":"set_multiple_parameters", "parameters":[], "image_name":data["image_name"] }
             img = bpy.data.images[data["image_name"]]
             for parameter in img.mml_remote_parameters:
                 parameter_data = json.dumps({ "node_name":parameter.node_name, "param_name":parameter.param_name, "param_label":parameter.param_label, "param_value":parameter.value, "image_name":parameter.owner_image.name, "render":"False", "param_type":"remote"})

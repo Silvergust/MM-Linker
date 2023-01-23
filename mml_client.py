@@ -62,7 +62,7 @@ class MMLClient:
                     data = json.dumps({"command":"ping"})
                     self.send_json(data)
                 await asyncio.sleep(0.01)
-            MML.inform("Disconnected from MM")
+            mml.MML.inform("Disconnected from MM")
             mml.MML.on_disconnect()
         
             
