@@ -23,7 +23,6 @@ Requires [aaugustin's websockets library](https://github.com/aaugustin/websocket
 # TODO
 * Implement vector parameter inputs.
 * Implement use of multiple remote nodes.
-* Implement simultaneous open PTex files.
 * Have the addon dentify relevant maps to render on each parameter change.
 * Bug and stability fixes, potentially forever.
 
