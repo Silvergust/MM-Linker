@@ -1,0 +1,18 @@
+schema_version = "1.0.0"
+
+id = "material_maker_linker"
+version = "0.2.0"
+name = "Material Maker Linker"
+tagline = "Linker between Blender and Material Maker"
+maintainer = "Silvergust"
+type = "add-on"
+
+website = "https://github.com/Silvergust/MM-Linker.git"
+
+tags = ["User Interface"]
+
+blender_version_min = "4.3.0"
+
+license = [
+  "SPDX:MIT",
+]
