@@ -1,12 +1,18 @@
-import bpy
-from . import websockets
-from . import mml_client
-from . import mml_main as mml
 import asyncio
 import os
 import time
-
 import json
+
+if "bpy" in locals():
+    import importlib
+    importlib.reload(websockets)
+    importlib.reload(mml_client)
+    importlib.reload(mml_main)
+else:
+    import bpy
+    from . import websockets
+    from . import mml_client
+    from . import mml_main
 
 class MMLSubmit(bpy.types.Operator):
     """Send PTex file path to the MML server."""
@@ -34,7 +40,7 @@ class MMLSubmit(bpy.types.Operator):
         return {'PASS_THROUGH'}
 
     def execute(self, context):
-        mml.MML.inform("Sending data: ")
+        mml_main.MML.inform("Sending data: ")
         data_dict = { "command" : "load_ptex", "reset_parameters":self.reset_parameters, "image_name":self.image_name, "filepath" : self.data_to_send }
         data = json.dumps(data_dict)
         mml_client.MMLClient.instance.send_json(data)

@@ -1,11 +1,16 @@
-import bpy
 import time
 import asyncio 
 import threading
 import json
 
-from . import websockets
-from . import mml_main as mml
+if "bpy" in locals():
+    import importlib
+    importlib.reload(websockets)
+    importlib.reload(mml_main)
+else:
+    import bpy
+    from . import websockets
+    from . import mml_main
 
 class Status:
     disconnected = 0
@@ -54,7 +59,7 @@ class MMLClient:
                     break
                 while len(websocket.messages) > 0:
                     message = websocket.messages.popleft()
-                    mml.MML.interpret(message)
+                    mml_main.MML.interpret(message)
                 if len(self.data_to_send) > 0:
                     await websocket.send(self.data_to_send.pop())
                 if time.time() > previous_time + 20.0:
@@ -62,8 +67,8 @@ class MMLClient:
                     data = json.dumps({"command":"ping"})
                     self.send_json(data)
                 await asyncio.sleep(0.01)
-            mml.MML.inform("Disconnected from MM")
-            mml.MML.on_disconnect()
+            mml_main.MML.inform("Disconnected from MM")
+            mml_main.MML.on_disconnect()
         
             
     def send(self, data):
@@ -90,4 +95,21 @@ class OBJECT_OT_connect(bpy.types.Operator):
 
     def execute(self, context):
         MMLClient.instance.begin_connect_thread()
+        return {'FINISHED'}
+
+
+class OBJECT_OT_update_islands(bpy.types.Operator):
+    """Attempt to connect MML client to server."""
+    bl_idname = "image.mml_update_islands"
+    bl_label = "MML Update Islands"
+    
+    @classmethod
+    def poll(cls, context):
+        #return context.active_object is not None
+        print(context.screen)
+        return True
+
+    def execute(self, context):
+        #img = bpy.context.area.spaces.active.image
+        dir(bpy.context.area.spaces.active)
         return {'FINISHED'}

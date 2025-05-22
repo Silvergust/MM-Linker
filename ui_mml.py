@@ -1,23 +1,21 @@
-import bpy
 import json
 import pathlib
 import textwrap
 
 import sys
 import os
-
-#blend_dir = os.path.dirname(bpy.data.filepath)
-#if blend_dir not in sys.path:
-#    sys.path.append(blend_dir)
     
-from . import mml_main as mml
-from . import mml_sender
-from . import mml_client
+if "bpy" in locals():
+    import importlib
+    importlib.reload(mml_main)
+    importlib.reload(mml_sender)
+    importlib.reload(mml_client)
+else:
+    import bpy
+    from . import mml_main
+    from . import mml_sender
+    from . import mml_client
 
-#import importlib
-#importlib.reload(mml)
-#importlib.reload(mml_sender)
-#importlib.reload(mml_client)
 
 
 class MMLPanel(bpy.types.Panel):
@@ -28,25 +26,30 @@ class MMLPanel(bpy.types.Panel):
     bl_region_type = 'UI'
     bl_category = "MML"
 
-    def __init__(self):
-        img = bpy.context.area.spaces.active.image
-        self.mml_client = mml_client.MMLClient()
-        
 
     def draw(self, context):
         layout = self.layout
 
         img = bpy.context.area.spaces.active.image
+        if not  mml_client.MMLClient.instance:
+            mml_client.MMLClient()
+        self.mml_client = mml_client.MMLClient.instance
 
         row = layout.row()
         row.label(text="Status: {}".format(self.mml_client.instance.get_status_string()))
         row = layout.row()
         layout.prop(img.mml_properties, "port")
         mml_client.MMLClient.instance.port = img.mml_properties.port
-        row.label(text=mml.MML.info_message)
+        row.label(text=mml_main.MML.info_message)
+
         row = layout.row()
         layout.prop(img.mml_properties, 'ptex_filepath')
         
+        row = layout.row()
+        layout.prop(img.mml_properties, 'island_only')
+        layout.operator(mml_client.OBJECT_OT_update_islands.bl_idname)
+        print("aaa")
+
         row = layout.row()
         connect_button = layout.operator(mml_client.OBJECT_OT_connect.bl_idname, text="Connect to MM")
         row1 = self.layout.row()   
@@ -63,7 +66,7 @@ class MMLPanel(bpy.types.Panel):
         
         for r in [row1, row2]:
             r.enabled = self.mml_client.instance.status == mml_client.Status.connected
-        row3.enabled = mml.MML.is_ready()
+        row3.enabled = mml_main.MML.is_ready()
         
         
         self.layout.separator(factor=2)
@@ -95,7 +98,7 @@ class MMLPanel(bpy.types.Panel):
         else:
             row.template_list("UI_UL_ParamsList", "The_List", img,
                           "mml_local_parameters", img, "params_list_index")
-        row.enabled = mml.MML.is_ready()
+        row.enabled = mml_main.MML.is_ready()
             
 
 def update_test(self, context):
