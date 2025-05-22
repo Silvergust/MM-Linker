@@ -1,5 +1,4 @@
 import json
-
 import asyncio
 import time
 import math
@@ -67,8 +66,7 @@ def parameter_update(self, context):
             data_to_send["param_value"] = self.value
             data_to_send["parameter_type"] = "remote" if self.is_remote else "local" # TODO: Rename (e.g. "is the type int or is the type remote?")
             data_to_send["render"] = str(self.owner_image.mml_properties.auto_update)
-            print(" A data_to_send['render']: ", data_to_send['render'])
-            print("AAAAAAAAAAAAAAAAAAA ", self.owner_image.mml_properties.auto_update)
+            print("Data_to_send['render']: ", data_to_send['render'])
 
             image_rr_data = self.owner_image.mml_properties.get_request_render_data()
             for key in image_rr_data:
@@ -92,85 +90,44 @@ class MMLParameters(bpy.types.PropertyGroup):
     
 
 class Island():
-    def __init__(self, vert):
-        #self.vertices = bm.verts
-        self.vertices = self.get_island_vertices(vert)
-        #self.boundary_points = self.get_boundary_points()
-        self.boundary_uv_points = self.get_boundary_uv_points(bm.loops.layers.uv[0])
-        print("vertices:")
-        print(self.vertices)
+    def __init__(self, bm, uv_layer, vert):
+        self.loops = self.find_uv_island_loops(vert.link_loops[0], uv_layer)
+        self.uv_boundary_loops = [loop for loop in self.loops if Island.is_loop_uv_boundary(loop, uv_layer)]
 
 
-    def get_island_vertices(self, vertex):
-        stack = [vertex]
+    def get_vertices(self):
+        return  [loop.vert for loop in self.loops]
+
+
+    def find_uv_island_loops(self, loop, uv_layer):
+        stack = [loop]
         output = []
         while len(stack) > 0:
-            vert = stack.pop()
-            other_verts = [loop.other_vert(vert) for loop in vert.link_loops]
-            for other_vert in other_verts:
-                if other_vert not in output:
-                    output.appen(other_vert)
+            current_loop = stack.pop()
+            next_loop = current_loop.link_loop_next
+            if next_loop not in output:
+                stack.append(next_loop)
+                output.append(next_loop)
+            if Island.is_loop_uv_boundary(current_loop, uv_layer):
+                continue
+            for adjacent_loop in current_loop.link_loops:
+                if not adjacent_loop in output:
+                    stack.append(adjacent_loop)
+                    output.append(adjacent_loop)
         return output
-
-
-
-    ### UNTESTED ###
-    def get_boundary_points(self):
-        loops = set()
-        for vert in self.vertices:
-            loops = loops.union(vert.link_loops[:]) # Slow?
-        boundary_loops = [loop for loop in loops if Island.is_loop_boundary(loop)] #Island.loops_are_adjacent(loop)]
-        sorted_boundary_loops = boundary_loops[0]
-        while len(sorted_boundary_loops) < boundary_loops:
-            next_loop = sorted_boundary_loops[-1].link_loop_next
-            if Island.is_boundary_loop(next_loop):
-                sorted_boundary_loops.append(next_loop)
-            else:
-                #sorted_boundary_loops.append(next_loop.link_loop_next)
-                sorted_boundary_loops.append(next_loop.link_loops[0].link_loop_next)
-        return sorted_boundary_loops
-    
-    
-    def get_boundary_uv_points(self, uv_layer):
-        loops = set()
-        for vert in self.vertices:
-            loops = loops.union(vert.link_loops[:]) # Slow?
-        boundary_loops = [loop for loop in loops if Island.is_uv_loop_boundary(loop, uv_layer)]
-        sorted_boundary_loops = [boundary_loops[0]]
-        sorted_boundary_uv_loops = [boundary_loops[0][uv_layer]]
-        i = 0
-        while len(sorted_boundary_loops) < len(boundary_loops):
-            i += 1
-            if i > 1000:
-                print("Too many iterations")
-                break
-            next_loop = sorted_boundary_loops[-1].link_loop_next
-            if Island.is_uv_loop_boundary(next_loop, uv_layer):
-                sorted_boundary_loops.append(next_loop)
-                sorted_boundary_uv_loops.append(next_loop[uv_layer])
-            else:
-                #sorted_boundary_loops.append(next_loop.link_loop_next)
-                sorted_boundary_loops.append(next_loop.link_loops[0].link_loop_next)
-                sorted_boundary_uv_loops.append(next_loop.link_loops[0].link_loop_next[uv_layer])
-        return sorted_boundary_uv_loops
 
 
     def get_inner_points(self):
         pass
 
 
+
     def __repr__(self):
-        return str([p.uv for p in self.boundary_uv_points])
+        return str([str(loop.vert.index) + "-" + str(loop.link_loop_next.vert.index) for loop in self.loops])
 
 
     @classmethod
     def is_loop_boundary(cls, loop):
-        #diff_1 = loop_a.vert.co - loop_b.link_loop_next.vert.co
-        #if max(diff_1) or -min(diff_1) > 0.001:
-        #    return False
-        #diff = loop_a.link_loop_next.co - loop_b.vert.co
-        #if max(diff_1) or -min(diff_1) > 0.001:
-        #    return False
         if not Island.are_vectors_equal(loop.vert.co, loop.link_loops[0].link_loop_next.vert.co):
             return False
         if not Island.are_vectors_equal(loop.link_loop_next.vert.co, loop.link_loops[0].vert.co):
@@ -178,7 +135,7 @@ class Island():
         return True
     
     @classmethod
-    def is_uv_loop_boundary(cls, loop, uv_layer):
+    def is_loop_uv_boundary(cls, loop, uv_layer):
         if len(loop.link_loops) == 0: # It's assumed that if it's a boundary loop, it's an uv boundary loop
             return True
         if not Island.are_vectors_equal(loop[uv_layer].uv, loop.link_loops[0].link_loop_next[uv_layer].uv):
@@ -192,6 +149,27 @@ class Island():
     def are_vectors_equal(cls, vec_a, vec_b):
         diff = vec_b - vec_a
         return max(diff) > 0.001 or -min(diff) > 0.001
+
+
+    @classmethod
+    def are_loops_uv_adjacent(cls, loop_a, loop_b, uv_layer):
+        print("loop_a uv: ", loop_a[uv_layer].uv)
+        print("loop_b uv: ", loop_b[uv_layer].uv)
+        print("loop_a next loop uv: ", loop_a.link_loop_next[uv_layer].uv)
+        print("loop_b next loop uv: ", loop_b.link_loop_next[uv_layer].uv)
+        if cls.are_vectors_equal(loop_a[uv_layer].uv, loop_b[uv_layer].uv) and cls.are_vectors_equal(loop_a.link_loop_next[uv_layer].uv, loop_b.link_loop_next[uv_layer].uv):
+            print("True")
+            return True
+        if cls.are_vectors_equal(loop_a[uv_layer].uv, loop_b.link_loop_next[uv_layer].uv) and cls.are_vectors_equal(loop_a.link_loop_next[uv_layer].uv, loop_b[uv_layer].uv):
+            print("True")
+            return True
+        print("False")
+        return False
+
+
+    @classmethod
+    def list_loops_vert_indices(cls, loops):
+        return [str(loop.vert.index) + "-" + str(loop.link_loop_next.vert.index) for loop in loops]
 
 
 

@@ -37,6 +37,10 @@ class MMLPanel(bpy.types.Panel):
 
         row = layout.row()
         row.label(text="Status: {}".format(self.mml_client.instance.get_status_string()))
+
+        if not img:
+            return
+
         row = layout.row()
         layout.prop(img.mml_properties, "port")
         mml_client.MMLClient.instance.port = img.mml_properties.port
@@ -48,7 +52,6 @@ class MMLPanel(bpy.types.Panel):
         row = layout.row()
         layout.prop(img.mml_properties, 'island_only')
         layout.operator(mml_client.OBJECT_OT_update_islands.bl_idname)
-        print("aaa")
 
         row = layout.row()
         connect_button = layout.operator(mml_client.OBJECT_OT_connect.bl_idname, text="Connect to MM")

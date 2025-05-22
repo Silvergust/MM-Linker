@@ -2,6 +2,7 @@ import time
 import asyncio 
 import threading
 import json
+import bmesh
 
 if "bpy" in locals():
     import importlib
@@ -105,11 +106,27 @@ class OBJECT_OT_update_islands(bpy.types.Operator):
     
     @classmethod
     def poll(cls, context):
-        #return context.active_object is not None
-        print(context.screen)
-        return True
+        return context.object and context.mode == 'EDIT_MESH'
+
 
     def execute(self, context):
         #img = bpy.context.area.spaces.active.image
-        dir(bpy.context.area.spaces.active)
+        #print(dir(bpy.context.area.spaces.active))
+        #print(bpy.context.area.spaces.active.uv_editor)
+        #print(dir(bpy.context.area.spaces.active.uv_editor))
+        bm = bmesh.from_edit_mesh(context.object.data)
+        verts = bm.verts[:]
+        islands = []
+        while len(verts) > 0:
+            #print("vert[0]: ", verts[0])
+            island = mml_main.Island(bm, bm.loops.layers.uv[0], verts[0])
+            #print("island.get_vertices(): ")
+            #print(island.get_vertices())
+            verts = list(set(verts).difference(set(island.get_vertices())))
+            #print("island verts:")
+            #print(verts)
+            islands.append(island)
+        for island in islands:
+            print("Island:")
+            print(island)
         return {'FINISHED'}
