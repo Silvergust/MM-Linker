@@ -95,6 +95,7 @@ class Island():
         self.uv_boundary_loops = [loop for loop in self.loops if Island.is_loop_uv_boundary(loop, uv_layer)]
 
 
+
     def get_vertices(self):
         return  [loop.vert for loop in self.loops]
 
@@ -117,13 +118,60 @@ class Island():
         return output
 
 
-    def get_inner_points(self):
-        pass
 
-
-
+    
     def __repr__(self):
         return str([str(loop.vert.index) + "-" + str(loop.link_loop_next.vert.index) for loop in self.loops])
+
+
+    @classmethod
+    def evaluate_loop_at_x(self, loop, uv_layer, x):
+        x1,y1 = loop[uv_layer].uv
+        x2,y2 = loop.link_loop_next[uv_layer].uv
+
+        if abs(x2-x1) < 0.001:# Check if it's vertical
+            return None # May consider defaulting to max/min instead
+        if not min(x1,x2) < x < max(x1,x2):
+            return None
+        m = (y2-y1)/(x2-x1)
+        return y1 + m * (x - x1)
+
+
+    @classmethod
+    def find_face_points(cls, face, uv_layer, size_factor):
+        prev_corner = face.loops[0].link_loop_prev
+        base_corner = face.loops[0]
+        next_corner = face.loops[0].link_loop_next
+        opposite_corner = next_corner.link_loop_next
+        points = [prev_corner, base_corner, next_corner, opposite_corner]
+        p1, p2, p3, p4 = [size_factor * point[uv_layer].uv for point in points]
+        return cls.find_quad_inner_points(p1, p2, p3, p4)
+
+
+    @classmethod
+    def find_quad_inner_points(cls, p1, p2, p3, p4):    # I expect this to work with tris anyways
+        v21 = p1 - p2
+        v34 = p4 - p3 
+        output = set()
+        print("abs(p3.x - p2.x): ", abs(p3.x - p2.x))
+        if abs(p3.x - p2.x) > 5:
+            start_base_vector = p2 if p2.x < p3.x else p3
+            end_base_vector = p2 if p2.x > p3.x else p3
+            x_span = end_base_vector.x - start_base_vector.x
+            for x in range(math.floor(start_base_vector.x), math.ceil(end_base_vector.x)):
+                s = (math.floor(end_base_vector.x) - x) / x_span
+                print("s: ", s)
+                interpolated_base_vector = start_base_vector * s + end_base_vector * ( 1 - s)
+                interpolated_side_vector = v21 * s + v34 * ( 1 - s )
+                start_side_vector = interpolated_base_vector if interpolated_base_vector.y < (interpolated_base_vector + interpolated_side_vector).y else (interpolated_base_vector + interpolated_side_vector)
+                end_side_vector = interpolated_base_vector if interpolated_base_vector.y > (interpolated_base_vector + interpolated_side_vector).y else (interpolated_base_vector + interpolated_side_vector)
+                y_span = end_side_vector.y - start_side_vector.y
+                for y in range(math.floor(start_side_vector.y), math.ceil(end_side_vector.y)):
+                    t = (math.floor(end_side_vector.y) - y) / y_span
+                    point = tuple(math.floor(value) for value in (start_side_vector * t + end_side_vector * ( 1 - t )))
+                    output.add( point )
+        print(output)
+        return output
 
 
     @classmethod
