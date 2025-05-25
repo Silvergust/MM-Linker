@@ -2,6 +2,9 @@ import json
 import asyncio
 import time
 import math
+#import bmesh
+from mathutils import Vector
+from mathutils import geometry as geo
 
 if "bpy" in locals():
     import importlib
@@ -17,6 +20,7 @@ class MMLProperties(bpy.types.PropertyGroup):
     port: bpy.props.IntProperty(name="Port", default=6001) # Unfortunately couldn't go on something more sensible like MMLClient
     ptex_filepath: bpy.props.StringProperty(name = "PTex Filepath", subtype='FILE_PATH')
     island_only: bpy.props.BoolProperty(name = "Selected Island Only")
+    island_data: bpy.props.StringProperty(name = "Island Data")
     use_remote_parameters: bpy.props.BoolProperty(name="Use remote parameters")
     auto_update: bpy.props.BoolProperty(name="Auto-Update")
     request_albedo: bpy.props.BoolProperty(name="Request albedo map")
@@ -73,7 +77,8 @@ def parameter_update(self, context):
                 data_to_send[key] = image_rr_data[key]
             print("data_to_send['render']: ", data_to_send['render'])
             mml_client.MMLClient.instance.send_json(json.dumps(data_to_send))
-            
+         
+
 
 class MMLParameters(bpy.types.PropertyGroup):
     node_name: bpy.props.StringProperty()
@@ -90,14 +95,18 @@ class MMLParameters(bpy.types.PropertyGroup):
     
 
 class Island():
-    def __init__(self, bm, uv_layer, vert):
+    def __init__(self, bm, uv_layer, vert, size_factors):
         self.loops = self.find_uv_island_loops(vert.link_loops[0], uv_layer)
         self.uv_boundary_loops = [loop for loop in self.loops if Island.is_loop_uv_boundary(loop, uv_layer)]
-
+        self.inner_points = self.find_inner_points(uv_layer, size_factors)
 
 
     def get_vertices(self):
         return  [loop.vert for loop in self.loops]
+
+
+    def get_inner_points(self):
+        return self.inner_points
 
 
     def find_uv_island_loops(self, loop, uv_layer):
@@ -117,60 +126,114 @@ class Island():
                     output.append(adjacent_loop)
         return output
 
-
-
     
     def __repr__(self):
         return str([str(loop.vert.index) + "-" + str(loop.link_loop_next.vert.index) for loop in self.loops])
 
 
+    def find_inner_points(self, uv_layer, size_factors):
+        print("find_inner_points()")
+        faces = set()
+        for loop in self.loops:
+            faces.add(loop.face)
+        points = set()
+        for face in faces:
+            points = points.union(Island.find_face_points(face, uv_layer, size_factors))
+        return points
+
     @classmethod
-    def evaluate_loop_at_x(self, loop, uv_layer, x):
+    def evaluate_loop_at_x(cls, loop, uv_layer, x):
         x1,y1 = loop[uv_layer].uv
         x2,y2 = loop.link_loop_next[uv_layer].uv
+        return cls.evaluate_at_x(x1, x2, y1, y2, x)
 
-        if abs(x2-x1) < 0.001:# Check if it's vertical
-            return None # May consider defaulting to max/min instead
-        if not min(x1,x2) < x < max(x1,x2):
+    @classmethod
+    def evaluate_resized_loop_at_x(cls, loop, uv_layer, x, resize_factors, offset=0.0):
+        x1 = loop[uv_layer].uv.x * resize_factors[0]
+        y1 = loop[uv_layer].uv.y * resize_factors[1]
+        x2 = loop.link_loop_next[uv_layer].uv.x * resize_factors[0]
+        y2 = loop.link_loop_next[uv_layer].uv.y * resize_factors[1]
+        return cls.evaluate_at_x(x1,x2,y1,y2,x, offset)
+
+
+    class VerticalLineException(Exception):
+        pass
+
+
+    @classmethod
+    def evaluate_at_x(self, x1, x2, y1, y2, x, offset=0.0):
+        if not min(x1,x2) - offset < x < max(x1,x2) + offset:
             return None
+        if abs(x2-x1) < 0.001:
+            raise Island.VerticalLineException()
         m = (y2-y1)/(x2-x1)
         return y1 + m * (x - x1)
 
 
-    @classmethod
-    def find_face_points(cls, face, uv_layer, size_factor):
-        prev_corner = face.loops[0].link_loop_prev
-        base_corner = face.loops[0]
-        next_corner = face.loops[0].link_loop_next
-        opposite_corner = next_corner.link_loop_next
-        points = [prev_corner, base_corner, next_corner, opposite_corner]
-        p1, p2, p3, p4 = [size_factor * point[uv_layer].uv for point in points]
-        return cls.find_quad_inner_points(p1, p2, p3, p4)
+    # This method is faster, but it causes rounding issues
+    # @classmethod
+    # def find_quad_inner_points(cls, p1, p2, p3, p4):    # I expect this to work with tris anyways
+    #     v21 = p1 - p2
+    #     v34 = p4 - p3 
+    #     initial_points = [tuple([math.floor(value) for value in p]) for p in [p1,p2,p3,p4]]
+    #     output = set( initial_points)
+    #     point = initial_points[1]
+    #     print("output: ", output)
+    #     if abs(p3.x - p2.x) > 5:
+    #         start_base_vector = p2 if p2.x < p3.x else p3
+    #         end_base_vector = p2 if p2.x > p3.x else p3
+    #         x_span = end_base_vector.x - start_base_vector.x
+    #         for x in range(math.floor(start_base_vector.x), math.ceil(end_base_vector.x)):
+    #             s = (math.floor(end_base_vector.x) - x) / x_span
+    #             interpolated_base_vector = start_base_vector * s + end_base_vector * ( 1 - s)
+    #             interpolated_side_vector = v21 * s + v34 * ( 1 - s )
+    #             start_side_vector = interpolated_base_vector if interpolated_base_vector.y < (interpolated_base_vector + interpolated_side_vector).y else (interpolated_base_vector + interpolated_side_vector)
+    #             end_side_vector = interpolated_base_vector if interpolated_base_vector.y > (interpolated_base_vector + interpolated_side_vector).y else (interpolated_base_vector + interpolated_side_vector)
+    #             y_span = end_side_vector.y - start_side_vector.y
+    #             for y in range(math.floor(start_side_vector.y), math.ceil(end_side_vector.y)):
+    #                 t = (math.floor(end_side_vector.y) - y) / y_span
+    #                 current_point = tuple(math.floor(value) for value in (start_side_vector * t + end_side_vector * ( 1 - t )))
+    #                 if abs(current_point[0] - point[0]) + abs(current_point[1] - point[1]) > 1:
+    #                     extra_point_1 = (math.floor(point[0]) + 1, math.floor(point[1]))
+    #                     extra_point_2 = (math.floor(point[0]), math.floor(point[1]) + 1)
+    #                     output.add( extra_point_1)
+    #                     output.add( extra_point_2)
+    #                 print("Adding point ", point)
+    #                 point = current_point
+    #                 output.add( point )
+    #     print("find_quad_inner_points found:")
+    #     print(output)
+    #     return output
 
 
     @classmethod
-    def find_quad_inner_points(cls, p1, p2, p3, p4):    # I expect this to work with tris anyways
-        v21 = p1 - p2
-        v34 = p4 - p3 
+    def find_face_points(cls, face, uv_layer, size_factors):
+        return cls.find_loops_inner_points(face.loops, uv_layer, size_factors)
+
+
+    @classmethod
+    def find_loops_inner_points(cls, loops, uv_layer, size_factors, offset=4):
+        min_x = max(0, math.floor( min( [size_factors[0] * loop[uv_layer].uv.x for loop in loops] ) - offset ))
+        max_x = min(size_factors[0], math.ceil( max( [size_factors[0] * loop[uv_layer].uv.x for loop in loops] ) + offset ))
+        min_y = max(0, math.floor( min( [size_factors[1] * loop[uv_layer].uv.y for loop in loops] ) - offset ))
+        max_y = min(size_factors[1], math.ceil( max( [size_factors[1] * loop[uv_layer].uv.y for loop in loops] ) + offset ))
+
+        points = [Vector((size_factors[0]*loop[uv_layer].uv.x, size_factors[1]*loop[uv_layer].uv.y)) for loop in loops]
+        print(points)
+        for loop in loops:
+            if cls.is_loop_uv_boundary(loop, uv_layer):
+                center = Vector((sum( [p.x for p in points] ), sum( [p.y for p in points]))) / len(points)
+                for i in range(len(points)):
+                    points[i] = points[i] + (points[i] - center).normalized() * 0.02 * size_factors[0]
+                break
+
         output = set()
-        print("abs(p3.x - p2.x): ", abs(p3.x - p2.x))
-        if abs(p3.x - p2.x) > 5:
-            start_base_vector = p2 if p2.x < p3.x else p3
-            end_base_vector = p2 if p2.x > p3.x else p3
-            x_span = end_base_vector.x - start_base_vector.x
-            for x in range(math.floor(start_base_vector.x), math.ceil(end_base_vector.x)):
-                s = (math.floor(end_base_vector.x) - x) / x_span
-                print("s: ", s)
-                interpolated_base_vector = start_base_vector * s + end_base_vector * ( 1 - s)
-                interpolated_side_vector = v21 * s + v34 * ( 1 - s )
-                start_side_vector = interpolated_base_vector if interpolated_base_vector.y < (interpolated_base_vector + interpolated_side_vector).y else (interpolated_base_vector + interpolated_side_vector)
-                end_side_vector = interpolated_base_vector if interpolated_base_vector.y > (interpolated_base_vector + interpolated_side_vector).y else (interpolated_base_vector + interpolated_side_vector)
-                y_span = end_side_vector.y - start_side_vector.y
-                for y in range(math.floor(start_side_vector.y), math.ceil(end_side_vector.y)):
-                    t = (math.floor(end_side_vector.y) - y) / y_span
-                    point = tuple(math.floor(value) for value in (start_side_vector * t + end_side_vector * ( 1 - t )))
-                    output.add( point )
-        print(output)
+        for x in range(min_x, max_x):
+            for y in range(min_y, max_y):
+                point = Vector((x,y))
+                intersects = geo.intersect_point_quad_2d(point , points[0], points[1], points[2], points[3%len(points)])
+                if intersects:
+                    output.add( (x,y))
         return output
 
 
@@ -191,29 +254,19 @@ class Island():
         if not Island.are_vectors_equal(loop.link_loop_next[uv_layer].uv, loop.link_loops[0][uv_layer].uv):
             return False
         return True
-        
-
+    
     @classmethod
     def are_vectors_equal(cls, vec_a, vec_b):
         diff = vec_b - vec_a
         return max(diff) > 0.001 or -min(diff) > 0.001
 
-
     @classmethod
     def are_loops_uv_adjacent(cls, loop_a, loop_b, uv_layer):
-        print("loop_a uv: ", loop_a[uv_layer].uv)
-        print("loop_b uv: ", loop_b[uv_layer].uv)
-        print("loop_a next loop uv: ", loop_a.link_loop_next[uv_layer].uv)
-        print("loop_b next loop uv: ", loop_b.link_loop_next[uv_layer].uv)
         if cls.are_vectors_equal(loop_a[uv_layer].uv, loop_b[uv_layer].uv) and cls.are_vectors_equal(loop_a.link_loop_next[uv_layer].uv, loop_b.link_loop_next[uv_layer].uv):
-            print("True")
             return True
         if cls.are_vectors_equal(loop_a[uv_layer].uv, loop_b.link_loop_next[uv_layer].uv) and cls.are_vectors_equal(loop_a.link_loop_next[uv_layer].uv, loop_b[uv_layer].uv):
-            print("True")
             return True
-        print("False")
         return False
-
 
     @classmethod
     def list_loops_vert_indices(cls, loops):
@@ -259,9 +312,9 @@ class MML():
         return
     
     @classmethod
-    def interpret_json(self, data):
+    def interpret_json(cls, data):
         data = json.loads(data)
-        if not self.key_check(data):
+        if not cls.key_check(data):
             MML.inform("Error: Key check fail")
             return
         command = data["command"]
@@ -287,29 +340,81 @@ class MML():
         elif command == "parameters_loaded":
             MML.mm_parameters_loaded = True
 
-
     @classmethod
-    def replace_image(self, image_name, size, data):
+    def replace_image(cls, image_name, size, data):
         if image_name in bpy.data.images:
             img = bpy.data.images[image_name]
         else:
             img = bpy.data.images.new(name=image_name, width=size, height=size)
 
         t0 = time.time()
-        if len(img.pixels) != len(data):
-            MML.inform("Warning: Expected data of size {}, got {}".format(len(img.pixels), len(data)))
-            img.scale(size, size)
-        img.pixels.foreach_set([byte / 255.0 for byte in data])
+        if img.mml_properties.island_only:            
+            island_data = json.loads(img.mml_properties.island_data)
+            points_to_island = island_data['points_to_island']
+
+            # Made so as to work only with selected vertices' island at the time of receiving MML data.
+            # Determined to be not worth having.
+            # bm = bmesh.from_edit_mesh(bpy.context.object.data) # Is there a better way to retrieve this data?
+            # bm = bmesh.from_edit_mesh(mml.)
+            # uv_layer = bm.loops.layers.uv.active
+            # selected_island_indices = set()
+            # for vert in bm.verts:
+            #     print("vert: ", vert)
+            #     for loop in vert.link_loops:
+            #         print("loop: ", loop)
+            #         uv = loop[uv_layer] 
+            #         point = tuple(math.floor(value*size) for value in loop[uv_layer].uv)
+            #         print("point: ", point)
+            #         if uv.select:
+            #             print("uv is selected")
+            #             #selected_island_indices.add( points_to_island[str(hash(point))] )
+            #             try:
+            #                 selected_island_indices.add( points_to_island[str(point)] )
+            #                 print("Point added")
+            #             except KeyError as e:
+            #                 #MML.inform(f"Key for point at {point} (hash {hash(point)}) not found!")
+            #                 MML.inform(f"Key for point at {point} not found!")
+            #                 continue
+            #                 #print("island_to_points:")
+            #                 #print(island_data['island_to_points'])
+            #                 #print("points_to_island:")
+            #                 #print(points_to_island)
+            #                 #return
+
+            island_to_points = island_data['island_to_points']
+            t1 = time.time()
+            pixel_data = list(img.pixels[:])
+            print(f"Pixel data copied in {time.time() - t1} seconds.")
+            t1 = time.time()
+            print("island_data.keys(): ", island_to_points.keys())
+            for island_index in island_to_points.keys():
+                print("island_index: ", island_index)
+                points_list = island_to_points[str(island_index)]
+                for point in points_list:
+                    pixel_index = (size * point[1] + point[0]) * img.channels
+                    for i in range(img.channels):
+                        pixel_data[pixel_index+i] =  data[pixel_index+i] / 255.0
+            print(f"Pixel data modified in {time.time() - t1} seconds.")
+            t1 = time.time()
+            img.pixels.foreach_set(pixel_data)
+            print(f"Pixel data replaced in {time.time() - t1} seconds.")
+        else:
+            if len(img.pixels) != len(data):
+                MML.inform("Warning: Expected data of size {}, got {}".format(len(img.pixels), len(data)))
+                img.scale(size, size)
+      
+            img.pixels.foreach_set([byte / 255.0 for byte in data])
+        t1 = time.time()
         img.pack()
         img.update()
         bpy.context.view_layer.update()
         bpy.context.scene.view_layers.update()
+        print(f"Final details took {time.time() - t1} seconds.")
         MML.inform("Image replaced in {} seconds.".format(time.time() - t0))
 
-
     @classmethod
-    def initialize_parameters(self, data):
-        MML.inform("Initializing parameters.")
+    def initialize_parameters(cls, data):
+        cls.inform("Initializing parameters.")
         img = bpy.data.images[data["image_name"]]
         parameters = None
         if data["parameters_type"] == "remote":
@@ -319,7 +424,7 @@ class MML():
             print("\n Local: \n")
             parameters = img.mml_local_parameters
         else:
-            MML.inform("ERROR: Incorrect parameters type on initialization.")
+            cls.inform("ERROR: Incorrect parameters type on initialization.")
         parameters.clear()
         received_parameters_data = data["parameters"]
 
@@ -336,14 +441,14 @@ class MML():
         return
         
     @classmethod
-    def is_ready(self):
+    def is_ready(cls):
         return mml_client.MMLClient.instance.status == mml_client.Status.connected and MML.mm_parameters_loaded
     
     @classmethod
-    def on_disconnect(self):
-        MML.mm_parameters_loaded = False
+    def on_disconnect(cls):
+        cls.mm_parameters_loaded = False
         
     @classmethod
-    def inform(self, message):
-        self.info_message = message
+    def inform(cls, message):
+        cls.info_message = message
         print(message)
