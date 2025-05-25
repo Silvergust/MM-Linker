@@ -95,14 +95,20 @@ class MMLParameters(bpy.types.PropertyGroup):
     
 
 class Island():
-    def __init__(self, bm, uv_layer, vert, size_factors):
-        self.loops = self.find_uv_island_loops(vert.link_loops[0], uv_layer)
+    def __init__(self, bm, uv_layer, loop):
+        self.loops = self.find_uv_island_loops(loop, uv_layer)
         self.uv_boundary_loops = [loop for loop in self.loops if Island.is_loop_uv_boundary(loop, uv_layer)]
-        self.inner_points = self.find_inner_points(uv_layer, size_factors)
+
+
+    def get_loops(self):
+        return self.loops
 
 
     def get_vertices(self):
-        return  [loop.vert for loop in self.loops]
+        output = set()
+        for loop in self.loops:
+            output.add(loop.vert)
+        return output
 
 
     def get_inner_points(self):
@@ -384,20 +390,19 @@ class MML():
             island_to_points = island_data['island_to_points']
             t1 = time.time()
             pixel_data = list(img.pixels[:])
-            print(f"Pixel data copied in {time.time() - t1} seconds.")
+            MML.inform(f"Pixel data copied in {time.time() - t1} seconds.")
             t1 = time.time()
-            print("island_data.keys(): ", island_to_points.keys())
+            MML.inform("island_data.keys(): ", island_to_points.keys())
             for island_index in island_to_points.keys():
-                print("island_index: ", island_index)
                 points_list = island_to_points[str(island_index)]
                 for point in points_list:
                     pixel_index = (size * point[1] + point[0]) * img.channels
                     for i in range(img.channels):
                         pixel_data[pixel_index+i] =  data[pixel_index+i] / 255.0
-            print(f"Pixel data modified in {time.time() - t1} seconds.")
+            MML.inform(f"Pixel data modified in {time.time() - t1} seconds.")
             t1 = time.time()
             img.pixels.foreach_set(pixel_data)
-            print(f"Pixel data replaced in {time.time() - t1} seconds.")
+            MML.inform(f"Pixel data replaced in {time.time() - t1} seconds.")
         else:
             if len(img.pixels) != len(data):
                 MML.inform("Warning: Expected data of size {}, got {}".format(len(img.pixels), len(data)))
@@ -409,8 +414,7 @@ class MML():
         img.update()
         bpy.context.view_layer.update()
         bpy.context.scene.view_layers.update()
-        print(f"Final details took {time.time() - t1} seconds.")
-        MML.inform("Image replaced in {} seconds.".format(time.time() - t0))
+        MML.inform(f"Image replaced in {time.time() - t0:.2f} seconds.")
 
     @classmethod
     def initialize_parameters(cls, data):

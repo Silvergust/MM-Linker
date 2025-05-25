@@ -117,47 +117,28 @@ class OBJECT_OT_update_islands(bpy.types.Operator):
 
 
     def execute(self, context):
-        print("Execute")
+        t = time.time()
         bm = bmesh.from_edit_mesh(context.object.data)
-        #uv_layer = context.object.data.uv_layers.active
         uv_layer = bm.loops.layers.uv[context.object.data.uv_layers.active.name]
-        #verts = [vert for vert in bm.verts[:] if vert.link_loops[0]]
-        selected_verts = set()
+
+        selected_loops = set()
         for vert in bm.verts:
             for loop in vert.link_loops:
                 if loop[uv_layer].select:
-                    selected_verts.add(vert)
-                    continue
-        islands = []
+                    selected_loops.add(loop)
+
         image = context.area.spaces.active.image
         island_data = { 'island_to_points' : {}, 'points_to_island' : {} }  # Sets are not JSON serializable
         island_id = 0
 
-        print("selected verts:")
-        print(selected_verts)
-        #verts = bm.verts[:]
-        verts = set(bm.verts[:])
-        while len(verts) > 0:
-            random_vert = verts.pop()
-            verts.add(random_vert)
-            island = mml_main.Island(bm, uv_layer, random_vert, image.size)
-            #verts = list(set(verts).difference(set(island.get_vertices())))
-            #if len(verts.intersection(selected_verts)) == 0:
-            #    continue
-            verts = verts.difference(set(island.get_vertices()))
-            #if len(verts.intersection(selected_verts)) == 0:
-            #    continue
-            if len( set(island.get_vertices()).intersection(selected_verts) ) == 0:
-                continue
-            island.find_inner_points(uv_layer, image.size)
-            points = list(island.get_inner_points())
-            island_data['island_to_points'][island_id] = points
-            for point in points:
-                island_data['points_to_island'][str(point)] = island_id # I don't like using hash(), consider using strings instead
-            print("Finished with island ", island_id)
+        while len(selected_loops) > 0:
+            random_loop = selected_loops.pop()
+            island = mml_main.Island(bm, uv_layer, random_loop)
+            selected_loops = selected_loops.difference(island.get_loops())
+            inner_points = island.find_inner_points(uv_layer, image.size)
+            island_data['island_to_points'][island_id] = list(inner_points)
             island_id += 1
-        image.mml_properties.island_data = json.dumps(island_data)
 
-        #image = bpy.data.images["TestUntitled01"]
-        #mml_main.MML.replace_image(image.name, image.size[0], test_data)
+        image.mml_properties.island_data = json.dumps(island_data)
+        mml_main.MML.inform(f"Island data update finished. Found {island_id} islands in {time.time() - t:.2f} seconds.") # Since the while loop has index_id += 1 at the end, the resulting value will correspond to the number of islands
         return {'FINISHED'}
